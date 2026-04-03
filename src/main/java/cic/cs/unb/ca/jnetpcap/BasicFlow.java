@@ -21,16 +21,10 @@ public class BasicFlow {
     // Is always the value true in this application
     private boolean isBidirectional;
 
-    private HashMap<String, MutableInt> flagCounts;
-
-    private int fPSH_cnt;
-    private int bPSH_cnt;
-    private int fURG_cnt;
-    private int bURG_cnt;
-    private int bRST_cnt;
-    private int fRST_cnt;
-    private int fFIN_cnt;
-    private int bFIN_cnt;
+    // two hashmaps tracking all 8 TCP flags (CWR, ECE, URG, ACK, PSH, RST, SYN, FIN) separately for each direction
+    // totals counts are going to be derived by summing fwd and bwd counts, so we don't need a third combined map to store total counts
+    private HashMap<String, MutableInt> fwdFlagCounts;  // flags seen in fwd packets
+    private HashMap<String, MutableInt> bwdFlagCounts;  // flags seen in bwd packets
 
     private long Act_data_pkt_forward;
     private long Act_data_pkt_backward;
@@ -154,20 +148,13 @@ public class BasicFlow {
         this.flowLengthStats = new SummaryStatistics();
         this.fwdPktStats = new SummaryStatistics();
         this.bwdPktStats = new SummaryStatistics();
-        this.flagCounts = new HashMap<String, MutableInt>();
-        initFlags();
+        initFlags();  // redefined in a way that initialises the fwd and bwd hashmaps that track the fwd and bwd flags separately
         this.forwardBytes = 0L;
         this.backwardBytes = 0L;
         this.startActiveTime = 0L;
         this.endActiveTime = 0L;
         this.src = null;
         this.dst = null;
-        this.fPSH_cnt = 0;
-        this.bPSH_cnt = 0;
-        this.fURG_cnt = 0;
-        this.bURG_cnt = 0;
-        this.fFIN_cnt = 0;
-        this.bFIN_cnt = 0;
         this.fHeaderBytes = 0L;
         this.bHeaderBytes = 0L;
         this.cumulativeConnectionDuration = 0L;
@@ -208,18 +195,6 @@ public class BasicFlow {
             if (packet.getPayloadBytes() >= 1) {
                 this.Act_data_pkt_forward++;
             }
-            if (packet.hasFlagPSH()) {
-                this.fPSH_cnt++;
-            }
-            if (packet.hasFlagURG()) {
-                this.fURG_cnt++;
-            }
-            if (packet.hasFlagFIN()) {
-                this.fFIN_cnt++;
-            }
-            if (packet.hasFlagRST()) {
-                this.fRST_cnt++;
-            }
         } else {
             this.min_seg_size_backward = packet.getHeaderBytes();
             Init_Win_bytes_backward = packet.getTCPWindow();
@@ -230,18 +205,6 @@ public class BasicFlow {
             this.backward.add(packet);
             if (packet.getPayloadBytes() >= 1) {
                 this.Act_data_pkt_backward++;
-            }
-            if (packet.hasFlagPSH()) {
-                this.bPSH_cnt++;
-            }
-            if (packet.hasFlagURG()) {
-                this.bURG_cnt++;
-            }
-            if (packet.hasFlagFIN()) {
-                this.bFIN_cnt++;
-            }
-            if (packet.hasFlagRST()) {
-                this.bRST_cnt++;
             }
         }
         this.protocol = packet.getProtocol();
@@ -296,18 +259,6 @@ public class BasicFlow {
                     this.forwardIAT.addValue(currentTimestamp - this.forwardLastSeen);
                 this.forwardLastSeen = currentTimestamp;
                 this.min_seg_size_forward = Math.min(packet.getHeaderBytes(), this.min_seg_size_forward);
-                if (packet.hasFlagPSH()) {
-                    this.fPSH_cnt++;
-                }
-                if (packet.hasFlagURG()) {
-                    this.fURG_cnt++;
-                }
-                if (packet.hasFlagFIN()) {
-                    this.fFIN_cnt++;
-                }
-                if (packet.hasFlagRST()) {
-                    this.fRST_cnt++;
-                }
             } else {
                 if (packet.getPayloadBytes() >= 1) {
                     this.Act_data_pkt_backward++;
@@ -326,18 +277,6 @@ public class BasicFlow {
                     this.backwardIAT.addValue(currentTimestamp - this.backwardLastSeen);
                 this.backwardLastSeen = currentTimestamp;
                 this.min_seg_size_backward = Math.min(packet.getHeaderBytes(), this.min_seg_size_backward);
-                if (packet.hasFlagPSH()) {
-                    this.bPSH_cnt++;
-                }
-                if (packet.hasFlagURG()) {
-                    this.bURG_cnt++;
-                }
-                if (packet.hasFlagFIN()) {
-                    this.bFIN_cnt++;
-                }
-                if (packet.hasFlagRST()) {
-                    this.bRST_cnt++;
-                }
             }
         } else {
             if (packet.getPayloadBytes() >= 1) {
@@ -400,58 +339,50 @@ public class BasicFlow {
         return 0;
     }
 
-    public void initFlags() {
-        flagCounts.put("FIN", new MutableInt());
-        flagCounts.put("SYN", new MutableInt());
-        flagCounts.put("RST", new MutableInt());
-        flagCounts.put("PSH", new MutableInt());
-        flagCounts.put("ACK", new MutableInt());
-        flagCounts.put("URG", new MutableInt());
-        flagCounts.put("CWR", new MutableInt());
-        flagCounts.put("ECE", new MutableInt());
+    // helper method that creates one fresh flag hashmap with all 8 flags set to zero
+    // called twice by initFlags(): once to create the fwd flag hashmap, once to create the bwd flag hashmap
+    private HashMap<String, MutableInt> createFlagMap() {
+        HashMap<String, MutableInt> map = new HashMap<>();
+        map.put("FIN", new MutableInt());  // add key "FIN" and say that the value is a MutableInt
+        map.put("SYN", new MutableInt());
+        map.put("RST", new MutableInt());
+        map.put("PSH", new MutableInt());
+        map.put("ACK", new MutableInt());
+        map.put("URG", new MutableInt());
+        map.put("CWR", new MutableInt());
+        map.put("ECE", new MutableInt());
+        return map;  // return the completed map
     }
 
+    // initialises both directional flag maps to all-zero counts
+    // called from initParameters() at the start of every new flow
+    public void initFlags() {
+        this.fwdFlagCounts = createFlagMap();  // fwd direction: all flags start at 0
+        this.bwdFlagCounts = createFlagMap();  // bwd direction: all flags start at 0
+    }
+
+    // called for every packet (both in firstPacket() and addPacket())
+    // the idea is to first figure out if it's a fwd or bwd packet, then increment
+    // the right flag counter in the right directional map
     public void checkFlags(BasicPacketInfo packet) {
-        if (packet.hasFlagFIN()) {
-            //MutableInt count1 = flagCounts.get("FIN");
-            //count1.increment();
-            flagCounts.get("FIN").increment();
+        // Arrays.equals() compares byte arrays by content (like python's == for lists to check if all elements of an ordered list are the same)
+        // if packet src IP is the same as the flow src IP then it's a fwd packet, and if not, it's a bwd packet
+        HashMap<String, MutableInt> dirMap;  // directional hashmap
+        if (Arrays.equals(this.src, packet.getSrc())) {
+            dirMap = fwdFlagCounts;
+        } else {
+            dirMap = bwdFlagCounts;
         }
-        if (packet.hasFlagSYN()) {
-            //MutableInt count2 = flagCounts.get("SYN");
-            //count2.increment();
-            flagCounts.get("SYN").increment();
-        }
-        if (packet.hasFlagRST()) {
-            //MutableInt count3 = flagCounts.get("RST");
-            //count3.increment();
-            flagCounts.get("RST").increment();
-        }
-        if (packet.hasFlagPSH()) {
-            //MutableInt count4 = flagCounts.get("PSH");
-            //count4.increment();
-            flagCounts.get("PSH").increment();
-        }
-        if (packet.hasFlagACK()) {
-            //MutableInt count5 = flagCounts.get("ACK");
-            //count5.increment();
-            flagCounts.get("ACK").increment();
-        }
-        if (packet.hasFlagURG()) {
-            //MutableInt count6 = flagCounts.get("URG");
-            //count6.increment();
-            flagCounts.get("URG").increment();
-        }
-        if (packet.hasFlagCWR()) {
-            //MutableInt count7 = flagCounts.get("CWR");
-            //count7.increment();
-            flagCounts.get("CWR").increment();
-        }
-        if (packet.hasFlagECE()) {
-            //MutableInt count8 = flagCounts.get("ECE");
-            //count8.increment();
-            flagCounts.get("ECE").increment();
-        }
+
+        // now increment whichever flags this packet has set
+        if (packet.hasFlagFIN()) dirMap.get("FIN").increment();
+        if (packet.hasFlagSYN()) dirMap.get("SYN").increment();
+        if (packet.hasFlagRST()) dirMap.get("RST").increment();
+        if (packet.hasFlagPSH()) dirMap.get("PSH").increment();
+        if (packet.hasFlagACK()) dirMap.get("ACK").increment();
+        if (packet.hasFlagURG()) dirMap.get("URG").increment();
+        if (packet.hasFlagCWR()) dirMap.get("CWR").increment();
+        if (packet.hasFlagECE()) dirMap.get("ECE").increment();
     }
 
     public double getSflow_fbytes() {
@@ -699,143 +630,6 @@ public class BasicFlow {
         }
     }
 
-    public String dumpFlowBasedFeatures() {
-        String dump = "";
-        dump += this.flowId + ",";
-        dump += FormatUtils.ip(src) + ",";
-        dump += getSrcPort() + ",";
-        dump += FormatUtils.ip(dst) + ",";
-        dump += getDstPort() + ",";
-        dump += getProtocol().val + ",";
-        //dump+=this.flowStartTime+",";
-        dump += DateFormatter.parseDateFromLong(this.flowStartTime / 1000L, "dd/MM/yyyy hh:mm:ss") + ",";
-        long flowDuration = this.flowLastSeen - this.flowStartTime;
-        dump += flowDuration + ",";
-        dump += this.fwdPktStats.getN() + ",";
-        dump += this.bwdPktStats.getN() + ",";
-        dump += this.fwdPktStats.getSum() + ",";
-        dump += this.bwdPktStats.getSum() + ",";
-        if (fwdPktStats.getN() > 0L) {
-            dump += this.fwdPktStats.getMax() + ",";
-            dump += this.fwdPktStats.getMin() + ",";
-            dump += this.fwdPktStats.getMean() + ",";
-            dump += this.fwdPktStats.getStandardDeviation() + ",";
-        } else {
-            dump += "0,0,0,0,";
-        }
-        if (bwdPktStats.getN() > 0L) {
-            dump += this.bwdPktStats.getMax() + ",";
-            dump += this.bwdPktStats.getMin() + ",";
-            dump += this.bwdPktStats.getMean() + ",";
-            dump += this.bwdPktStats.getStandardDeviation() + ",";
-        } else {
-            dump += "0,0,0,0,";
-        }
-        // flow duration is in microseconds, therefore packets per seconds = packets / (duration/1000000)
-        dump += ((double) (this.forwardBytes + this.backwardBytes)) / ((double) flowDuration / 1000000L) + ",";
-        dump += ((double) packetCount()) / ((double) flowDuration / 1000000L) + ",";
-        dump += this.flowIAT.getMean() + ",";
-        dump += this.flowIAT.getStandardDeviation() + ",";
-        dump += this.flowIAT.getMax() + ",";
-        dump += this.flowIAT.getMin() + ",";
-        if (this.forward.size() > 1) {
-            dump += this.forwardIAT.getSum() + ",";
-            dump += this.forwardIAT.getMean() + ",";
-            dump += this.forwardIAT.getStandardDeviation() + ",";
-            dump += this.forwardIAT.getMax() + ",";
-            dump += this.forwardIAT.getMin() + ",";
-        } else {
-            dump += "0,0,0,0,0,";
-        }
-        if (this.backward.size() > 1) {
-            dump += this.backwardIAT.getSum() + ",";
-            dump += this.backwardIAT.getMean() + ",";
-            dump += this.backwardIAT.getStandardDeviation() + ",";
-            dump += this.backwardIAT.getMax() + ",";
-            dump += this.backwardIAT.getMin() + ",";
-        } else {
-            dump += "0,0,0,0,0,";
-        }
-
-        dump += this.fPSH_cnt + ",";
-        dump += this.bPSH_cnt + ",";
-        dump += this.fURG_cnt + ",";
-        dump += this.bURG_cnt + ",";
-
-        dump += this.fHeaderBytes + ",";
-        dump += this.bHeaderBytes + ",";
-        dump += getfPktsPerSecond() + ",";
-        dump += getbPktsPerSecond() + ",";
-
-        if (this.forward.size() > 0 || this.backward.size() > 0) {
-            dump += this.flowLengthStats.getMin() + ",";
-            dump += this.flowLengthStats.getMax() + ",";
-            dump += this.flowLengthStats.getMean() + ",";
-            dump += this.flowLengthStats.getStandardDeviation() + ",";
-            dump += flowLengthStats.getVariance() + ",";
-        } else {
-            dump += "0,0,0,0,";
-        }
-
-        for (String key : flagCounts.keySet()) {
-            dump += flagCounts.get(key).value + ",";
-        }
-
-        dump += getDownUpRatio() + ",";
-        dump += getAvgPacketSize() + ",";
-        dump += fAvgSegmentSize() + ",";
-        dump += bAvgSegmentSize() + ",";
-        dump += this.fHeaderBytes + ",";  //this feature is duplicated
-
-
-        dump += fAvgBytesPerBulk() + ",";
-        dump += fAvgPacketsPerBulk() + ",";
-        dump += fAvgBulkRate() + ",";
-        dump += fAvgBytesPerBulk() + ",";
-        dump += bAvgPacketsPerBulk() + ",";
-        dump += bAvgBulkRate() + ",";
-
-        dump += getSflow_fpackets() + ",";
-        dump += getSflow_fbytes() + ",";
-        dump += getSflow_bpackets() + ",";
-        dump += getSflow_bbytes() + ",";
-
-        dump += this.Init_Win_bytes_forward + ",";
-        dump += this.Init_Win_bytes_backward + ",";
-        dump += this.Act_data_pkt_forward + ",";
-        dump += this.Act_data_pkt_forward + ",";
-        dump += this.min_seg_size_forward + ",";
-        dump += this.min_seg_size_backward + ",";
-
-        if (this.flowActive.getN() > 0) {
-            dump += this.flowActive.getMean() + ",";
-            dump += this.flowActive.getStandardDeviation() + ",";
-            dump += this.flowActive.getMax() + ",";
-            dump += this.flowActive.getMin() + ",";
-        } else {
-            dump += "0,0,0,0,";
-        }
-
-        if (this.flowIdle.getN() > 0) {
-            dump += this.flowIdle.getMean() + ",";
-            dump += this.flowIdle.getStandardDeviation() + ",";
-            dump += this.flowIdle.getMax() + ",";
-            dump += this.flowIdle.getMin();
-        } else {
-            dump += "0,0,0,0";
-        }
-        dump += "," + getLabel();
-
-		/*if(FormatUtils.ip(src).equals("147.32.84.165") | FormatUtils.ip(dst).equals("147.32.84.165")){
-			dump+=",BOTNET";
-		}
-		else{
-			dump+=",BENIGN";
-		} */
-        /////////////////////////////////
-        return dump;
-    }
-
     public int packetCount() {
         if (isBidirectional) {
             return (this.forward.size() + this.backward.size());
@@ -1075,6 +869,51 @@ public class BasicFlow {
         return (backward.size() > 1) ? backwardIAT.getMin() : 0;
     }
 
+    // get flag count for one specific flag in the fwd direction
+    // e.g., flow.getFwdFlagCount("SYN") returns how many packets that had the SYN flag active went fwd
+    public int getFwdFlagCount(String key) {
+        return fwdFlagCounts.get(key).value;
+    }
+
+    // get flag count for one specific flag in the bwd direction
+    public int getBwdFlagCount(String key) {
+        return bwdFlagCounts.get(key).value;
+    }
+
+    // get total flag count across both directions (derived, not stored separately)
+    // e.g., flow.getFlagCount("ACK") = fwd ACK count + bwd ACK count
+    public int getFlagCount(String key) {
+        return fwdFlagCounts.get(key).value + bwdFlagCounts.get(key).value;
+    }
+
+    // convenience getters kept for backward compatibility in case there's other code that 
+    // still calls the old names (though it shouldn't be the case) commented out right below
+    // they now just delegate to the 3 new hashmap-based getters right above
+    public int getFwdPSHFlags() { 
+        return getFwdFlagCount("PSH"); 
+    }
+    
+    public int getBwdPSHFlags() { 
+        return getBwdFlagCount("PSH"); 
+    }
+    
+    public int getFwdURGFlags() { 
+        return getFwdFlagCount("URG"); 
+    }
+    
+    public int getBwdURGFlags() { 
+        return getBwdFlagCount("URG"); 
+    }
+    
+    public int getFwdFINFlags() { 
+        return getFwdFlagCount("FIN"); 
+    }
+    
+    public int getBwdFINFlags() { 
+        return getBwdFlagCount("FIN"); 
+    }
+
+    /* 
     public int getFwdPSHFlags() {
         return fPSH_cnt;
     }
@@ -1098,6 +937,13 @@ public class BasicFlow {
     public int getBwdFINFlags() {
         return bFIN_cnt;
     }
+
+    // redefined above
+    public int getFlagCount(String key) {
+        return flagCounts.get(key).value;
+    }
+
+    */
 
     public long getFwdHeaderLength() {
         return fHeaderBytes;
@@ -1125,10 +971,6 @@ public class BasicFlow {
 
     public double getPacketLengthVariance() {
         return (forward.size() > 0 || backward.size() > 0) ? flowLengthStats.getVariance() : 0;
-    }
-
-    public int getFlagCount(String key) {
-        return flagCounts.get(key).value;
     }
 
     public int getInit_Win_bytes_forward() {
@@ -1317,13 +1159,6 @@ public class BasicFlow {
             dump.append(0).append(separator);
         }
 
-        dump.append(fPSH_cnt).append(separator);                                    //37
-        dump.append(bPSH_cnt).append(separator);                                    //38
-        dump.append(fURG_cnt).append(separator);                                    //39
-        dump.append(bURG_cnt).append(separator);                                    //40
-        dump.append(fRST_cnt).append(separator);                                    //41
-        dump.append(bRST_cnt).append(separator);                                    //42
-
         dump.append(fHeaderBytes).append(separator);                                //43
         dump.append(bHeaderBytes).append(separator);                                //44
         dump.append(getfPktsPerSecond()).append(separator);                            //45
@@ -1350,14 +1185,36 @@ public class BasicFlow {
 		for(String key: flagCounts.keySet()){
 			dump.append(flagCounts.get(key).value).append(separator);				//50,51,52,53,54,55,56,57
 		} */
-        dump.append(flagCounts.get("FIN").value).append(separator);                 //52
-        dump.append(flagCounts.get("SYN").value).append(separator);                 //53
-        dump.append(flagCounts.get("RST").value).append(separator);                  //54
-        dump.append(flagCounts.get("PSH").value).append(separator);                  //55
-        dump.append(flagCounts.get("ACK").value).append(separator);                  //56
-        dump.append(flagCounts.get("URG").value).append(separator);                  //57
-        dump.append(flagCounts.get("CWR").value).append(separator);                  //58
-        dump.append(flagCounts.get("ECE").value).append(separator);                  //59
+
+        // fwd flag counts
+        dump.append(fwdFlagCounts.get("FIN").value).append(separator);  // fwd FIN
+        dump.append(fwdFlagCounts.get("SYN").value).append(separator);  // fwd SYN
+        dump.append(fwdFlagCounts.get("RST").value).append(separator);  // fwd RST
+        dump.append(fwdFlagCounts.get("PSH").value).append(separator);  // fwd PSH
+        dump.append(fwdFlagCounts.get("ACK").value).append(separator);  // fwd ACK
+        dump.append(fwdFlagCounts.get("URG").value).append(separator);  // fwd URG
+        dump.append(fwdFlagCounts.get("CWR").value).append(separator);  // fwd CWR
+        dump.append(fwdFlagCounts.get("ECE").value).append(separator);  // fwd ECE
+
+        // bwd flag counts
+        dump.append(bwdFlagCounts.get("FIN").value).append(separator);  // bwd FIN
+        dump.append(bwdFlagCounts.get("SYN").value).append(separator);  // bwd SYN
+        dump.append(bwdFlagCounts.get("RST").value).append(separator);  // bwd RST
+        dump.append(bwdFlagCounts.get("PSH").value).append(separator);  // bwd PSH
+        dump.append(bwdFlagCounts.get("ACK").value).append(separator);  // bwd ACK
+        dump.append(bwdFlagCounts.get("URG").value).append(separator);  // bwd URG
+        dump.append(bwdFlagCounts.get("CWR").value).append(separator);  // bwd CWR
+        dump.append(bwdFlagCounts.get("ECE").value).append(separator);  // bwd ECE
+
+        // total flag count (derived from fwd and bwd flag counts) 
+        dump.append(getFlagCount("FIN")).append(separator);  // total FIN
+        dump.append(getFlagCount("SYN")).append(separator);  // total SYN
+        dump.append(getFlagCount("RST")).append(separator);  // total RST
+        dump.append(getFlagCount("PSH")).append(separator);  // total PSH
+        dump.append(getFlagCount("ACK")).append(separator);  // total ACK
+        dump.append(getFlagCount("URG")).append(separator);  // total URG
+        dump.append(getFlagCount("CWR")).append(separator);  // total CWR
+        dump.append(getFlagCount("ECE")).append(separator);  // total ECE
 
         dump.append(getDownUpRatio()).append(separator);                            //60
         dump.append(getAvgPacketSize()).append(separator);                            //61

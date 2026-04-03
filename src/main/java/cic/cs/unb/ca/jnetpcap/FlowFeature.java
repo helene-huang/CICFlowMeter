@@ -46,13 +46,6 @@ public enum FlowFeature {
     bw_iat_std("Bwd IAT Std","BwIATSD"),			//34
     bw_iat_max("Bwd IAT Max","BwIATMA"),			//35
     bw_iat_min("Bwd IAT Min","BwIATMI"),			//36
-    fw_psh_flag("Fwd PSH Flags","FwPSH"),			//37
-    bw_psh_flag("Bwd PSH Flags","BwPSH"),			//38
-    fw_urg_flag("Fwd URG Flags","FwURG"),			//39
-    bw_urg_flag("Bwd URG Flags","BwURG"),			//40
-
-    fw_rst_flag("Fwd RST Flags", "FwRST"),          //41
-    bw_rst_flag("Bwd RST Flags", "BwRST"),          //42
 
     fw_hdr_len("Fwd Header Length","FwHL"),			//43
     bw_hdr_len("Bwd Header Length","BwHL"),			//44
@@ -63,6 +56,25 @@ public enum FlowFeature {
     pkt_len_avg("Packet Length Mean","PLAG"),			//49
     pkt_len_std("Packet Length Std","PLSD"),			//50
     pkt_len_var("Packet Length Variance","PLVA"),		//51
+    
+    fw_fin_flag("Fwd FIN Flags", "FwFIN"),          //42
+    fw_syn_flag("Fwd SYN Flags","FwSYN"),			//38
+    fw_rst_flag("Fwd RST Flags", "FwRST"),          //41
+    fw_psh_flag("Fwd PSH Flags","FwPSH"),			//37
+    fw_ack_flag("Fwd ACK Flags", "FwACK"),          //42
+    fw_urg_flag("Fwd URG Flags","FwURG"),			//39
+    fw_cwr_flag("Fwd CWR Flags","FwCWR"),			//40
+    fw_ece_flag("Fwd ECE Flags","FwECE"),			//40
+
+    bw_fin_flag("Bwd FIN Flags", "BwFIN"),          //42
+    bw_syn_flag("Bwd SYN Flags","BwSYN"),			//38
+    bw_rst_flag("Bwd RST Flags", "BwRST"),          //42
+    bw_psh_flag("Bwd PSH Flags","BwPSH"),			//38
+    bw_ack_flag("Bwd ACK Flags", "BwACK"),          //42
+    bw_urg_flag("Bwd URG Flags","BwURG"),			//40
+    bw_cwr_flag("Bwd CWR Flags","BwCWR"),			//40
+    bw_ece_flag("Bwd ECE Flags","BwECE"),			//40
+
     fin_cnt("FIN Flag Count","FINCT"),				//52
     syn_cnt("SYN Flag Count","SYNCT"),				//53
     rst_cnt("RST Flag Count","RSTCT"),				//54
@@ -71,6 +83,7 @@ public enum FlowFeature {
     urg_cnt("URG Flag Count","URGCT"),				//57
     CWR_cnt("CWR Flag Count","CWRCT"),				//58
     ece_cnt("ECE Flag Count","ECECT"),				//59
+    
     down_up_ratio("Down/Up Ratio","D/URO"),			//60
     pkt_size_avg("Average Packet Size","PSAG"),			//61
     fw_seg_avg("Fwd Segment Size Avg","FwSgAG"),		//62
