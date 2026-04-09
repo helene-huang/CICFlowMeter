@@ -18,10 +18,14 @@ public enum FlowFeature {
     prot("Protocol","PROT"),					//6
     tstp("Timestamp","TSTP",false),				//7
     fl_dur("Flow Duration","DUR"),				//8
-    tot_fw_pkt("Total Fwd Packet","TFwP"),			//9
-    tot_bw_pkt("Total Bwd packets","TBwP"),			//10
-    tot_l_fw_pkt("Total Length of Fwd Packet","TLFwP"),		//11
-    tot_l_bw_pkt("Total Length of Bwd Packet","TLBwP"),		//12
+
+    tot_fw_pkt("Total Fwd Packets","TFwP"),			//9
+    tot_bw_pkt("Total Bwd Packets","TBwP"),			//10
+
+    tot_l_fw_pkt("Total Length of Fwd Packets","TLFwP"),		//11
+    tot_l_bw_pkt("Total Length of Bwd Packets","TLBwP"),		//12
+
+    // IP datagram level, packet stats
     fw_pkt_l_max("Fwd Packet Length Max","FwPLMA"),		//13
     fw_pkt_l_min("Fwd Packet Length Min","FwPLMI"),		//14
     fw_pkt_l_avg("Fwd Packet Length Mean","FwPLAG"),		//15
@@ -30,6 +34,35 @@ public enum FlowFeature {
     bw_pkt_l_min("Bwd Packet Length Min","BwPLMI"),		//18
     bw_pkt_l_avg("Bwd Packet Length Mean","BwPLAG"),		//19
     bw_pkt_l_std("Bwd Packet Length Std","BwPLSD"),		//20
+
+    // segment length stats, L4 PDU = L4 header + L4 payload (new features)
+    fw_seg_l_max("Fwd Segment Length Max","FwSgLMA"),
+    fw_seg_l_min("Fwd Segment Length Min","FwSgLMI"),
+    fw_seg_l_avg("Fwd Segment Length Mean","FwSgLAG"),
+    fw_seg_l_std("Fwd Segment Length Std","FwSgLSD"),
+    bw_seg_l_max("Bwd Segment Length Max","BwSgLMA"),
+    bw_seg_l_min("Bwd Segment Length Min","BwSgLMI"),
+    bw_seg_l_avg("Bwd Segment Length Mean","BwSgLAG"),
+    bw_seg_l_std("Bwd Segment Length Std","BwSgLSD"),
+
+    // payload length stats, L4 payload only (new features)
+    fw_pay_l_max("Fwd Payload Length Max","FwPaLMA"),
+    fw_pay_l_min("Fwd Payload Length Min","FwPaLMI"),
+    fw_pay_l_avg("Fwd Payload Length Mean","FwPaLAG"),
+    fw_pay_l_std("Fwd Payload Length Std","FwPaLSD"),
+    bw_pay_l_max("Bwd Payload Length Max","BwPaLMA"),
+    bw_pay_l_min("Bwd Payload Length Min","BwPaLMI"),
+    bw_pay_l_avg("Bwd Payload Length Mean","BwPaLAG"),
+    bw_pay_l_std("Bwd Payload Length Std","BwPaLSD"),
+
+    // L3 IP header byte totals (new features)
+    fw_ip_hdr_len("Fwd IP Header Length Total","FwIPHL"),               
+    bw_ip_hdr_len("Bwd IP Header Length Total","BwIPHL"),        
+
+    // L4 transport header byte totals 
+    fw_hdr_len("Fwd Transport Header Length Total","FwHL"),			//43
+    bw_hdr_len("Bwd Transport Header Length Total","BwHL"),			//44
+      
     fl_byt_s("Flow Bytes/s","FB/s"),				//21
     fl_pkt_s("Flow Packets/s","FP/s"),				//22
     fl_iat_avg("Flow IAT Mean","FLIATAG"),			//23
@@ -54,8 +87,6 @@ public enum FlowFeature {
     fw_rst_flag("Fwd RST Flags", "FwRST"),          //41
     bw_rst_flag("Bwd RST Flags", "BwRST"),          //42
 
-    fw_hdr_len("Fwd Header Length","FwHL"),			//43
-    bw_hdr_len("Bwd Header Length","BwHL"),			//44
     fw_pkt_s("Fwd Packets/s","FwP/s"),				//45
     bw_pkt_s("Bwd Packets/s","Bwp/s"),				//46
     pkt_len_min("Packet Length Min","PLMI"),			//47
@@ -73,8 +104,6 @@ public enum FlowFeature {
     ece_cnt("ECE Flag Count","ECECT"),				//59
     down_up_ratio("Down/Up Ratio","D/URO"),			//60
     pkt_size_avg("Average Packet Size","PSAG"),			//61
-    fw_seg_avg("Fwd Segment Size Avg","FwSgAG"),		//62
-    bw_seg_avg("Bwd Segment Size Avg","BwSgAG"),		//63
     fw_byt_blk_avg("Fwd Bytes/Bulk Avg","FwB/BAG"),		//64   62 is duplicated with 43,so has been deleted
     fw_pkt_blk_avg("Fwd Packet/Bulk Avg","FwP/BAG"),		//65
     fw_blk_rate_avg("Fwd Bulk Rate Avg","FwBRAG"),		//66
@@ -89,8 +118,7 @@ public enum FlowFeature {
     bw_win_byt("Bwd Init Win Bytes","BwWB"),			//75
     Fw_act_pkt("Fwd Act Data Pkts","FwAP"),
     Bw_act_pkt("Bwd Act Data Pkts","BwAP"),//76
-    fw_seg_min("Fwd Seg Size Min","FwSgMI"),			//77
-    bw_seg_min("Bwd Seg Size Min", "BwSgMI"),
+
     atv_avg("Active Mean","AcAG"),				//78
     atv_std("Active Std","AcSD"),				//79
     atv_max("Active Max","AcMA"),				//80
@@ -193,8 +221,8 @@ public enum FlowFeature {
 		features.add(fw_pkt_s);
 		features.add(bw_pkt_s);
 		features.add(pkt_size_avg);
-		features.add(fw_seg_avg);
-		features.add(bw_seg_avg);
+		features.add(fw_seg_l_avg);
+		features.add(bw_seg_l_avg);
 		return features;
 	}
 

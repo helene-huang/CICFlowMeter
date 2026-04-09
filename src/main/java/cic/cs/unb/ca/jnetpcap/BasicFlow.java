@@ -5,18 +5,48 @@ import java.util.*;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.jnetpcap.packet.format.FormatUtils;
 
-public class BasicFlow {
 
+// network layer = layer 3 = L3; protocol IP
+// transport layer = layer 4 = L4; protocol TCP, UDP, etc.
+
+
+public class BasicFlow {
     private final static String separator = ",";
-    private SummaryStatistics fwdPktStats = null;
-    private SummaryStatistics bwdPktStats = null;
+
+    // true IP datagram length stats (L3 header + L4 header + L4 payload)
+    // "packet" = full IP datagram as seen on the wire 
+    // previously, the "packets" stats were only about L4 payloads 
+    // new: was never actually calculated before 
+    private SummaryStatistics fwdPktStats = null;  // only for fwd packets
+    private SummaryStatistics bwdPktStats = null;  // only for bwd packets
+    private SummaryStatistics flowLengthStats = null;  // for both direction combined
+
+    // L4 protocol data unit (PDU) length stats (L4 header + L4 payload) per direction
+    // note: we use "segment" to loosely refers to any L4 PDU regardless of protocol for simplicity
+    // strictly: TCP -> segment, UDP -> datagram, SCTP -> packet, etc.
+    // new: was never actually calculated before 
+    private SummaryStatistics fwdSegmentStats = null;
+    private SummaryStatistics bwdSegmentStats = null;
+
+    // stats object for L4 payload length
+    // was previously named fwdPktStats and bwdPktStats, which was misleading
+    private SummaryStatistics fwdPayloadStats = null;
+    private SummaryStatistics bwdPayloadStats = null;
+
     private List<BasicPacketInfo> forward = null;
     private List<BasicPacketInfo> backward = null;
 
-    private long forwardBytes;
-    private long backwardBytes;
-    private long fHeaderBytes;
-    private long bHeaderBytes;
+    // accumulators that track the current running total of L4 payload bytes per direction
+    // we did not change that, as they are used in the calculation of some other features related to subflows, etc.
+    private long forwardBytes;  // L4 payload total fwd
+    private long backwardBytes;  // L4 payload total bwd
+
+    // header bytes total
+    // running totals of header bytes per direction and layer
+    private long fTransportHeaderBytes;   // fwd L4 header bytes total, renamed from fHeaderBytes
+    private long bTransportHeaderBytes;   // bwd L4 header bytes total, renamed from bHeaderBytes
+    private long fIpHeaderBytes;          // new: fwd L3 header bytes total
+    private long bIpHeaderBytes;          // new: bwd L3 header bytes total
 
     // Is always the value true in this application
     private boolean isBidirectional;
@@ -34,8 +64,6 @@ public class BasicFlow {
 
     private long Act_data_pkt_forward;
     private long Act_data_pkt_backward;
-    private long min_seg_size_forward;
-    private long min_seg_size_backward;
     private int Init_Win_bytes_forward = 0;
     private int Init_Win_bytes_backward = 0;
 
@@ -53,7 +81,7 @@ public class BasicFlow {
     private SummaryStatistics flowIAT = null;
     private SummaryStatistics forwardIAT = null;
     private SummaryStatistics backwardIAT = null;
-    private SummaryStatistics flowLengthStats = null;
+    
     private SummaryStatistics flowActive = null;
     private SummaryStatistics flowIdle = null;
 
@@ -152,6 +180,10 @@ public class BasicFlow {
         this.flowActive = new SummaryStatistics();
         this.flowIdle = new SummaryStatistics();
         this.flowLengthStats = new SummaryStatistics();
+        this.fwdPayloadStats = new SummaryStatistics();
+        this.bwdPayloadStats = new SummaryStatistics();
+        this.fwdSegmentStats = new SummaryStatistics();
+        this.bwdSegmentStats = new SummaryStatistics();
         this.fwdPktStats = new SummaryStatistics();
         this.bwdPktStats = new SummaryStatistics();
         this.flagCounts = new HashMap<String, MutableInt>();
@@ -170,6 +202,10 @@ public class BasicFlow {
         this.bFIN_cnt = 0;
         this.fHeaderBytes = 0L;
         this.bHeaderBytes = 0L;
+        this.fTransportHeaderBytes = 0L;
+        this.bTransportHeaderBytes = 0L;
+        this.fIpHeaderBytes = 0L;
+        this.bIpHeaderBytes = 0L;
         this.cumulativeConnectionDuration = 0L;
         this.tcpFlowState = null;
         this.tcpPacketsSeen = new HashSet<TcpRetransmissionDTO>();
@@ -195,15 +231,33 @@ public class BasicFlow {
         this.flowLastSeen = packet.getTimeStamp();
         this.startActiveTime = packet.getTimeStamp();
         detectUpdateSubflows(packet);
-        this.flowLengthStats.addValue((double) packet.getPayloadBytes());
+
+        // track fwd and bwd packet lengths stats 
+        this.flowLengthStats.addValue(
+            (double)(packet.getIpHeaderBytes()
+                + packet.getTransportHeaderBytes()
+                + packet.getPayloadBytes())
+        ); 
 
         if (Arrays.equals(this.src, packet.getSrc())) {
-            this.min_seg_size_forward = packet.getHeaderBytes();
             Init_Win_bytes_forward = packet.getTCPWindow();
-            this.fwdPktStats.addValue((double) packet.getPayloadBytes());
-            this.fHeaderBytes = packet.getHeaderBytes();
+
+            this.fwdPayloadStats.addValue((double) packet.getPayloadBytes());  // L4 payload only
+            this.fwdSegmentStats.addValue(
+                (double)(packet.getTransportHeaderBytes() + packet.getPayloadBytes())
+            );  // L4 PDU: L4 header + L4 payload
+            this.fwdPktStats.addValue(
+                (double)(packet.getIpHeaderBytes()
+                    + packet.getTransportHeaderBytes()
+                    + packet.getPayloadBytes())
+            );  // true packet length: L3 header + L4 header + L4 payload
+
+            this.fTransportHeaderBytes = packet.getTransportHeaderBytes();
+            this.fIpHeaderBytes = packet.getIpHeaderBytes();
+
             this.forwardLastSeen = packet.getTimeStamp();
             this.forwardBytes += packet.getPayloadBytes();
+
             this.forward.add(packet);
             if (packet.getPayloadBytes() >= 1) {
                 this.Act_data_pkt_forward++;
@@ -221,10 +275,21 @@ public class BasicFlow {
                 this.fRST_cnt++;
             }
         } else {
-            this.min_seg_size_backward = packet.getHeaderBytes();
             Init_Win_bytes_backward = packet.getTCPWindow();
-            this.bwdPktStats.addValue((double) packet.getPayloadBytes());
-            this.bHeaderBytes = packet.getHeaderBytes();
+
+            this.bwdPayloadStats.addValue((double) packet.getPayloadBytes());
+            this.bwdSegmentStats.addValue(
+                (double)(packet.getTransportHeaderBytes() + packet.getPayloadBytes())
+            );
+            this.bwdPktStats.addValue(
+                (double)(packet.getIpHeaderBytes()
+                    + packet.getTransportHeaderBytes()
+                    + packet.getPayloadBytes())
+            );
+
+            this.bTransportHeaderBytes = packet.getTransportHeaderBytes();
+            this.bIpHeaderBytes = packet.getIpHeaderBytes();           
+
             this.backwardLastSeen = packet.getTimeStamp();
             this.backwardBytes += packet.getPayloadBytes();
             this.backward.add(packet);
@@ -288,8 +353,20 @@ public class BasicFlow {
                 if (packet.getPayloadBytes() >= 1) {
                     this.Act_data_pkt_forward++;
                 }
-                this.fwdPktStats.addValue((double) packet.getPayloadBytes());
-                this.fHeaderBytes += packet.getHeaderBytes();
+
+                this.fwdPayloadStats.addValue((double) packet.getPayloadBytes());
+                this.fwdSegmentStats.addValue(
+                    (double)(packet.getTransportHeaderBytes() + packet.getPayloadBytes())
+                );
+                this.fwdPktStats.addValue(
+                    (double)(packet.getIpHeaderBytes()
+                        + packet.getTransportHeaderBytes()
+                        + packet.getPayloadBytes())
+                );
+
+                this.fIpHeaderBytes += packet.getIpHeaderBytes();
+                this.fTransportHeaderBytes += packet.getTransportHeaderBytes();
+                
                 this.forward.add(packet);
                 this.forwardBytes += packet.getPayloadBytes();
                 if (this.forward.size() > 1)
@@ -312,14 +389,27 @@ public class BasicFlow {
                 if (packet.getPayloadBytes() >= 1) {
                     this.Act_data_pkt_backward++;
                 }
-                this.bwdPktStats.addValue((double) packet.getPayloadBytes());
+
+                this.bwdPayloadStats.addValue((double) packet.getPayloadBytes());
+                this.bwdSegmentStats.addValue(
+                    (double)(packet.getTransportHeaderBytes() + packet.getPayloadBytes())
+                );
+                this.bwdPktStats.addValue(
+                    (double)(packet.getIpHeaderBytes()
+                        + packet.getTransportHeaderBytes()
+                        + packet.getPayloadBytes())
+                );
+
+                this.bTransportHeaderBytes += packet.getTransportHeaderBytes();
+                this.bIpHeaderBytes += packet.getIpHeaderBytes();
+
                 // set Init_win_bytes_backward if not been set. The set logic isn't 100%
                 // accurate, since it technically takes the first non-zero value, but should
                 // be good enough for most cases.
                 if (Init_Win_bytes_backward == 0) {
                     Init_Win_bytes_backward = packet.getTCPWindow();
                 }
-                this.bHeaderBytes += packet.getHeaderBytes();
+
                 this.backward.add(packet);
                 this.backwardBytes += packet.getPayloadBytes();
                 if (this.backward.size() > 1)
@@ -343,14 +433,28 @@ public class BasicFlow {
             if (packet.getPayloadBytes() >= 1) {
                 this.Act_data_pkt_forward++;
             }
-            this.fwdPktStats.addValue((double) packet.getPayloadBytes());
-            this.flowLengthStats.addValue((double) packet.getPayloadBytes());
-            this.fHeaderBytes += packet.getHeaderBytes();
+            this.fwdPayloadStats.addValue((double) packet.getPayloadBytes());
+            this.fwdSegmentStats.addValue(
+                (double)(packet.getTransportHeaderBytes() + packet.getPayloadBytes())
+            );
+            this.fwdPktStats.addValue(
+                (double)(packet.getIpHeaderBytes()
+                    + packet.getTransportHeaderBytes()
+                    + packet.getPayloadBytes())
+            );
+            this.flowLengthStats.addValue(
+                (double)(packet.getIpHeaderBytes()
+                    + packet.getTransportHeaderBytes()
+                    + packet.getPayloadBytes())
+            );
+
+            this.fTransportHeaderBytes += packet.getTransportHeaderBytes();
+            this.fIpHeaderBytes += packet.getIpHeaderBytes();
+
             this.forward.add(packet);
             this.forwardBytes += packet.getPayloadBytes();
             this.forwardIAT.addValue(currentTimestamp - this.forwardLastSeen);
             this.forwardLastSeen = currentTimestamp;
-            this.min_seg_size_forward = Math.min(packet.getHeaderBytes(), this.min_seg_size_forward);
         }
 
         this.flowIAT.addValue(packet.getTimeStamp() - this.flowLastSeen);
@@ -388,16 +492,12 @@ public class BasicFlow {
         return 0;
     }
 
+    // segment length mean per direction
     public double fAvgSegmentSize() {
-        if (this.forward.size() != 0)
-            return (this.fwdPktStats.getSum() / (double) this.forward.size());
-        return 0;
+        return (fwdSegmentStats.getN() > 0) ? fwdSegmentStats.getMean() : 0;
     }
-
     public double bAvgSegmentSize() {
-        if (this.backward.size() != 0)
-            return (this.bwdPktStats.getSum() / (double) this.backward.size());
-        return 0;
+        return (bwdSegmentStats.getN() > 0) ? bwdSegmentStats.getMean() : 0;
     }
 
     public void initFlags() {
@@ -699,146 +799,10 @@ public class BasicFlow {
         }
     }
 
-    public String dumpFlowBasedFeatures() {
-        String dump = "";
-        dump += this.flowId + ",";
-        dump += FormatUtils.ip(src) + ",";
-        dump += getSrcPort() + ",";
-        dump += FormatUtils.ip(dst) + ",";
-        dump += getDstPort() + ",";
-        dump += getProtocol().val + ",";
-        //dump+=this.flowStartTime+",";
-        dump += DateFormatter.parseDateFromLong(this.flowStartTime / 1000L, "dd/MM/yyyy hh:mm:ss") + ",";
-        long flowDuration = this.flowLastSeen - this.flowStartTime;
-        dump += flowDuration + ",";
-        dump += this.fwdPktStats.getN() + ",";
-        dump += this.bwdPktStats.getN() + ",";
-        dump += this.fwdPktStats.getSum() + ",";
-        dump += this.bwdPktStats.getSum() + ",";
-        if (fwdPktStats.getN() > 0L) {
-            dump += this.fwdPktStats.getMax() + ",";
-            dump += this.fwdPktStats.getMin() + ",";
-            dump += this.fwdPktStats.getMean() + ",";
-            dump += this.fwdPktStats.getStandardDeviation() + ",";
-        } else {
-            dump += "0,0,0,0,";
-        }
-        if (bwdPktStats.getN() > 0L) {
-            dump += this.bwdPktStats.getMax() + ",";
-            dump += this.bwdPktStats.getMin() + ",";
-            dump += this.bwdPktStats.getMean() + ",";
-            dump += this.bwdPktStats.getStandardDeviation() + ",";
-        } else {
-            dump += "0,0,0,0,";
-        }
-        // flow duration is in microseconds, therefore packets per seconds = packets / (duration/1000000)
-        dump += ((double) (this.forwardBytes + this.backwardBytes)) / ((double) flowDuration / 1000000L) + ",";
-        dump += ((double) packetCount()) / ((double) flowDuration / 1000000L) + ",";
-        dump += this.flowIAT.getMean() + ",";
-        dump += this.flowIAT.getStandardDeviation() + ",";
-        dump += this.flowIAT.getMax() + ",";
-        dump += this.flowIAT.getMin() + ",";
-        if (this.forward.size() > 1) {
-            dump += this.forwardIAT.getSum() + ",";
-            dump += this.forwardIAT.getMean() + ",";
-            dump += this.forwardIAT.getStandardDeviation() + ",";
-            dump += this.forwardIAT.getMax() + ",";
-            dump += this.forwardIAT.getMin() + ",";
-        } else {
-            dump += "0,0,0,0,0,";
-        }
-        if (this.backward.size() > 1) {
-            dump += this.backwardIAT.getSum() + ",";
-            dump += this.backwardIAT.getMean() + ",";
-            dump += this.backwardIAT.getStandardDeviation() + ",";
-            dump += this.backwardIAT.getMax() + ",";
-            dump += this.backwardIAT.getMin() + ",";
-        } else {
-            dump += "0,0,0,0,0,";
-        }
-
-        dump += this.fPSH_cnt + ",";
-        dump += this.bPSH_cnt + ",";
-        dump += this.fURG_cnt + ",";
-        dump += this.bURG_cnt + ",";
-
-        dump += this.fHeaderBytes + ",";
-        dump += this.bHeaderBytes + ",";
-        dump += getfPktsPerSecond() + ",";
-        dump += getbPktsPerSecond() + ",";
-
-        if (this.forward.size() > 0 || this.backward.size() > 0) {
-            dump += this.flowLengthStats.getMin() + ",";
-            dump += this.flowLengthStats.getMax() + ",";
-            dump += this.flowLengthStats.getMean() + ",";
-            dump += this.flowLengthStats.getStandardDeviation() + ",";
-            dump += flowLengthStats.getVariance() + ",";
-        } else {
-            dump += "0,0,0,0,";
-        }
-
-        for (String key : flagCounts.keySet()) {
-            dump += flagCounts.get(key).value + ",";
-        }
-
-        dump += getDownUpRatio() + ",";
-        dump += getAvgPacketSize() + ",";
-        dump += fAvgSegmentSize() + ",";
-        dump += bAvgSegmentSize() + ",";
-        dump += this.fHeaderBytes + ",";  //this feature is duplicated
-
-
-        dump += fAvgBytesPerBulk() + ",";
-        dump += fAvgPacketsPerBulk() + ",";
-        dump += fAvgBulkRate() + ",";
-        dump += fAvgBytesPerBulk() + ",";
-        dump += bAvgPacketsPerBulk() + ",";
-        dump += bAvgBulkRate() + ",";
-
-        dump += getSflow_fpackets() + ",";
-        dump += getSflow_fbytes() + ",";
-        dump += getSflow_bpackets() + ",";
-        dump += getSflow_bbytes() + ",";
-
-        dump += this.Init_Win_bytes_forward + ",";
-        dump += this.Init_Win_bytes_backward + ",";
-        dump += this.Act_data_pkt_forward + ",";
-        dump += this.Act_data_pkt_forward + ",";
-        dump += this.min_seg_size_forward + ",";
-        dump += this.min_seg_size_backward + ",";
-
-        if (this.flowActive.getN() > 0) {
-            dump += this.flowActive.getMean() + ",";
-            dump += this.flowActive.getStandardDeviation() + ",";
-            dump += this.flowActive.getMax() + ",";
-            dump += this.flowActive.getMin() + ",";
-        } else {
-            dump += "0,0,0,0,";
-        }
-
-        if (this.flowIdle.getN() > 0) {
-            dump += this.flowIdle.getMean() + ",";
-            dump += this.flowIdle.getStandardDeviation() + ",";
-            dump += this.flowIdle.getMax() + ",";
-            dump += this.flowIdle.getMin();
-        } else {
-            dump += "0,0,0,0";
-        }
-        dump += "," + getLabel();
-
-		/*if(FormatUtils.ip(src).equals("147.32.84.165") | FormatUtils.ip(dst).equals("147.32.84.165")){
-			dump+=",BOTNET";
-		}
-		else{
-			dump+=",BENIGN";
-		} */
-        /////////////////////////////////
-        return dump;
-    }
-
     public int packetCount() {
         if (isBidirectional) {
             return (this.forward.size() + this.backward.size());
+            // we could've used (fwdPktStats.getN() + bwdPktStats.getN()) instead of (this.forward.size() + this.backward.size())
         } else {
             return this.forward.size();
         }
@@ -975,60 +939,129 @@ public class BasicFlow {
     }
 
     public long getTotalFwdPackets() {
-        return fwdPktStats.getN();
+        return fwdPktStats.getN();  // getN() returns the number of addValue() calls made, and addValue() is called once for each fwd packet of the flow
     }
 
     public long getTotalBackwardPackets() {
         return bwdPktStats.getN();
     }
 
+    // total length of fwd/bwd packets 
     public double getTotalLengthofFwdPackets() {
+        // was returning the sum of L4 payload of fwd packets 
+        // now returns the actual total length of all fwd packets in the flow
         return fwdPktStats.getSum();
     }
-
     public double getTotalLengthofBwdPackets() {
+        // was returning the sum of L4 payload of bwd packets 
+        // now returns the actual total length of all bwd packets in the flow
         return bwdPktStats.getSum();
     }
 
+    // actual fwd per-packet length stats (IP datagram level)
     public double getFwdPacketLengthMax() {
         return (fwdPktStats.getN() > 0L) ? fwdPktStats.getMax() : 0;
     }
-
     public double getFwdPacketLengthMin() {
         return (fwdPktStats.getN() > 0L) ? fwdPktStats.getMin() : 0;
     }
-
     public double getFwdPacketLengthMean() {
         return (fwdPktStats.getN() > 0L) ? fwdPktStats.getMean() : 0;
     }
-
     public double getFwdPacketLengthStd() {
         return (fwdPktStats.getN() > 0L) ? fwdPktStats.getStandardDeviation() : 0;
     }
 
+    // actual bwd per-packet length stats (IP datagram level)
     public double getBwdPacketLengthMax() {
         return (bwdPktStats.getN() > 0L) ? bwdPktStats.getMax() : 0;
     }
-
     public double getBwdPacketLengthMin() {
         return (bwdPktStats.getN() > 0L) ? bwdPktStats.getMin() : 0;
     }
-
     public double getBwdPacketLengthMean() {
         return (bwdPktStats.getN() > 0L) ? bwdPktStats.getMean() : 0;
     }
-
     public double getBwdPacketLengthStd() {
         return (bwdPktStats.getN() > 0L) ? bwdPktStats.getStandardDeviation() : 0;
     }
 
-    public double getFlowBytesPerSec() {
-        //flow duration is in microseconds, therefore packets per seconds = packets / (duration/1000000)
-        return ((double) (forwardBytes + backwardBytes)) / ((double) getFlowDuration() / 1000000L);
+    // fwd segment length stats (TCP segment or UDP datagram level, i.e. L4 PDU level)
+    public double getFwdSegmentLengthMax() {
+    return (fwdSegmentStats.getN() > 0) ? fwdSegmentStats.getMax() : 0;
+    }
+    public double getFwdSegmentLengthMin() {
+        return (fwdSegmentStats.getN() > 0) ? fwdSegmentStats.getMin() : 0;
+    }
+    public double getFwdSegmentLengthMean() {
+        return (fwdSegmentStats.getN() > 0) ? fwdSegmentStats.getMean() : 0;
+    }
+    public double getFwdSegmentLengthStd() {
+        return (fwdSegmentStats.getN() > 0) ? fwdSegmentStats.getStandardDeviation() : 0;
     }
 
+    // bwd segment length stats (TCP segment or UDP datagram level, i.e. L4 PDU level)
+    public double getBwdSegmentLengthMax() {
+        return (bwdSegmentStats.getN() > 0) ? bwdSegmentStats.getMax() : 0;
+    }
+    public double getBwdSegmentLengthMin() {
+        return (bwdSegmentStats.getN() > 0) ? bwdSegmentStats.getMin() : 0;
+    }
+    public double getBwdSegmentLengthMean() {
+        return (bwdSegmentStats.getN() > 0) ? bwdSegmentStats.getMean() : 0;
+    }
+    public double getBwdSegmentLengthStd() {
+        return (bwdSegmentStats.getN() > 0) ? bwdSegmentStats.getStandardDeviation() : 0;
+    }
+
+    // fwd L4 payload stats -- those used to be called "packet" length stats
+    public double getFwdPayloadLengthMax() {
+    return (fwdPayloadStats.getN() > 0) ? fwdPayloadStats.getMax() : 0;
+    }
+    public double getFwdPayloadLengthMin() {
+        return (fwdPayloadStats.getN() > 0) ? fwdPayloadStats.getMin() : 0;
+    }
+    public double getFwdPayloadLengthMean() {
+        return (fwdPayloadStats.getN() > 0) ? fwdPayloadStats.getMean() : 0;
+    }
+    public double getFwdPayloadLengthStd() {
+        return (fwdPayloadStats.getN() > 0) ? fwdPayloadStats.getStandardDeviation() : 0;
+    }
+
+    // bwd L4 payload stats 
+    public double getBwdPayloadLengthMax() {
+    return (bwdPayloadStats.getN() > 0) ? bwdPayloadStats.getMax() : 0;
+    }
+    public double getBwdPayloadLengthMin() {
+        return (bwdPayloadStats.getN() > 0) ? bwdPayloadStats.getMin() : 0;
+    }
+    public double getBwdPayloadLengthMean() {
+        return (bwdPayloadStats.getN() > 0) ? bwdPayloadStats.getMean() : 0;
+    }
+    public double getBwdPayloadLengthStd() {
+        return (bwdPayloadStats.getN() > 0) ? bwdPayloadStats.getStandardDeviation() : 0;
+    }
+
+    // total flow bytes per second using true IP datagram totals
+    // fix 1: original used forwardBytes+backwardBytes (L4 payload only, not the actual packet length seen on the wire)
+    // fix 2: duration=0 guard prevents infinity/NaN
+    public double getFlowBytesPerSec() {
+        long duration = getFlowDuration();
+        //flow duration is in microseconds, therefore packets per seconds = packets / (duration/1000000)
+        if (duration > 0) {
+            return (fwdPktStats.getSum() + bwdPktStats.getSum()) / ((double) duration / 1000000L);
+        }
+        return 0;
+    }
+
+    // total flow packets per second: packet count is unchanged, still correct
+    // fix: duration guard added to prevent infinity/NaN
     public double getFlowPacketsPerSec() {
-        return ((double) packetCount()) / ((double) getFlowDuration() / 1000000L);
+        long duration = getFlowDuration();
+        if (duration > 0) {
+        return packetCount() / ((double) duration / 1000000L);
+        }
+        return 0;
     }
 
     public SummaryStatistics getFlowIAT() {
@@ -1099,16 +1132,25 @@ public class BasicFlow {
         return bFIN_cnt;
     }
 
+    // header byte totals 
     public long getFwdHeaderLength() {
-        return fHeaderBytes;
+    return fTransportHeaderBytes;  // renamed from fHeaderBytes, same value
     }
-
     public long getBwdHeaderLength() {
-        return bHeaderBytes;
+        return bTransportHeaderBytes;
+    }
+    public long getFwdIpHeaderLength() {
+        return fIpHeaderBytes;
+    }
+    public long getBwdIpHeaderLength() {
+        return bIpHeaderBytes;
     }
 
+    // flow-level length stats
     public double getMinPacketLength() {
         return (forward.size() > 0 || backward.size() > 0) ? flowLengthStats.getMin() : 0;
+        // could've been written as as:
+        // return (flowLengthStats.getN() > 0) ? flowLengthStats.getMin() : 0;
     }
 
     public double getMaxPacketLength() {
@@ -1122,6 +1164,7 @@ public class BasicFlow {
     public double getPacketLengthStd() {
         return (forward.size() > 0 || backward.size() > 0) ? flowLengthStats.getStandardDeviation() : 0;
     }
+
 
     public double getPacketLengthVariance() {
         return (forward.size() > 0 || backward.size() > 0) ? flowLengthStats.getVariance() : 0;
@@ -1145,14 +1188,6 @@ public class BasicFlow {
 
     public long getAct_data_pkt_backward() {
         return Act_data_pkt_backward;
-    }
-
-    public long getmin_seg_size_forward() {
-        return min_seg_size_forward;
-    }
-
-    public long getmin_seg_size_backward() {
-        return min_seg_size_backward;
     }
 
     public double getActiveMean() {
@@ -1247,11 +1282,15 @@ public class BasicFlow {
         long flowDuration = flowLastSeen - flowStartTime;
         dump.append(flowDuration).append(separator);                                //8
 
+        // packet counts
         dump.append(fwdPktStats.getN()).append(separator);                            //9
         dump.append(bwdPktStats.getN()).append(separator);                            //10
+        
+        // total length of packets 
         dump.append(fwdPktStats.getSum()).append(separator);                        //11
         dump.append(bwdPktStats.getSum()).append(separator);                        //12
 
+        // packet length stats
         if (fwdPktStats.getN() > 0L) {
             dump.append(fwdPktStats.getMax()).append(separator);                    //13
             dump.append(fwdPktStats.getMin()).append(separator);                    //14
@@ -1276,13 +1315,36 @@ public class BasicFlow {
             dump.append(0).append(separator);
         }
 
-        if(flowDuration != 0){
-            dump.append(((double) (forwardBytes + backwardBytes)) / ((double) flowDuration / 1000000L)).append(separator); //21
-            dump.append(((double) packetCount()) / ((double) flowDuration / 1000000L)).append(separator); // 22
-        }else{
-            dump.append(-1).append(separator);
-            dump.append(-1).append(separator);
-        }
+        // segment length stats, L4 PDU = L4 header + L4 payload (new features)
+        dump.append(getFwdSegmentLengthMax()).append(separator);
+        dump.append(getFwdSegmentLengthMin()).append(separator);
+        dump.append(getFwdSegmentLengthMean()).append(separator);
+        dump.append(getFwdSegmentLengthStd()).append(separator);
+        dump.append(getBwdSegmentLengthMax()).append(separator);
+        dump.append(getBwdSegmentLengthMin()).append(separator);
+        dump.append(getBwdSegmentLengthMean()).append(separator);
+        dump.append(getBwdSegmentLengthStd()).append(separator);
+
+        // payload length stats, L4 payload only (new features)
+        dump.append(getFwdPayloadLengthMax()).append(separator);
+        dump.append(getFwdPayloadLengthMin()).append(separator);
+        dump.append(getFwdPayloadLengthMean()).append(separator);
+        dump.append(getFwdPayloadLengthStd()).append(separator);
+        dump.append(getBwdPayloadLengthMax()).append(separator);
+        dump.append(getBwdPayloadLengthMin()).append(separator);
+        dump.append(getBwdPayloadLengthMean()).append(separator);
+        dump.append(getBwdPayloadLengthStd()).append(separator);
+
+        // L3 IP header lengths in bytes (new features)
+        dump.append(fIpHeaderBytes).append(separator);                               
+        dump.append(bIpHeaderBytes).append(separator);    
+
+        // L4 transport header lengths in bytes
+        dump.append(fTransportHeaderBytes).append(separator);                         // 43 fwd transport header bytes
+        dump.append(bTransportHeaderBytes).append(separator);   
+
+        dump.append(getFlowBytesPerSec()).append(separator);                      // 21 flow bytes/s (IP datagram total)
+        dump.append(getFlowPacketsPerSec()).append(separator);                    // 22 flow packets/s
 
         dump.append(Double.isNaN(flowIAT.getMean()) ? 0 : flowIAT.getMean()).append(separator);  // 23
         dump.append(Double.isNaN(flowIAT.getStandardDeviation()) ? 0 : flowIAT.getStandardDeviation()).append(separator); //24
@@ -1361,8 +1423,6 @@ public class BasicFlow {
 
         dump.append(getDownUpRatio()).append(separator);                            //60
         dump.append(getAvgPacketSize()).append(separator);                            //61
-        dump.append(fAvgSegmentSize()).append(separator);                            //62
-        dump.append(bAvgSegmentSize()).append(separator);                            //63
         //dump.append(fHeaderBytes).append(separator);								//62 dupicate with 43
 
         dump.append(fAvgBytesPerBulk()).append(separator);                            //64
@@ -1381,9 +1441,6 @@ public class BasicFlow {
         dump.append(Init_Win_bytes_backward).append(separator);                        //75
         dump.append(Act_data_pkt_forward).append(separator);                            //76
         dump.append(Act_data_pkt_backward).append(separator);                           //77
-        dump.append(min_seg_size_forward).append(separator);                        //78
-        dump.append(min_seg_size_backward).append(separator);                       //79
-
 
         if (this.flowActive.getN() > 0) {
             dump.append(flowActive.getMean()).append(separator);                    //80

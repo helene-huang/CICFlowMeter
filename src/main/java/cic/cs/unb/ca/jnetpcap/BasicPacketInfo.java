@@ -14,7 +14,7 @@ public class BasicPacketInfo {
     private    int dstPort;
     private    ProtocolEnum protocol = ProtocolEnum.DEFAULT;
     private    long   timeStamp;
-    private    long   payloadBytes;
+    private    long   payloadBytes;  // layer 4 payload; in PacketReader.java, set with the payloadbytes of TCP, UDP, SCTP (all layer 4 protocols)
     private    String  flowId = null;  
 /* ******************************************** */    
     private    boolean flagFIN = false;
@@ -26,7 +26,19 @@ public class BasicPacketInfo {
 	private    boolean flagCWR = false;
 	private    boolean flagRST = false;
 	private	   int TCPWindow=0;
-	private	   long headerBytes;
+	// private	   long headerBytes;  // this is originally the layer 3 header length
+
+	// we introduce the layer 3 (IP) header length in bytes
+	// for IPv4 with no options: always 20 bytes
+	// for IPv4 with options: 20-60 bytes
+	private long ipHeaderBytes;
+
+	// layer 4 (TCP, UDP, SCTP) header length in bytes
+	// TCP: 20-60 bytes depending on the options
+	// UDP: always 8 bytes
+	// ICMP, IGMP: set to 0 (layer 3 protocols)
+	private long transportHeaderBytes;
+
 	private int payloadPacket=0;
 	/* ** ICMP FIELDS ** */
 	private int icmpCode = -1;
@@ -179,12 +191,25 @@ public class BasicPacketInfo {
 		this.payloadBytes = payloadBytes;
 	}
 
-	public long getHeaderBytes() {
-		return headerBytes;
+	// layer 3 header length getter
+	public long getIpHeaderBytes() {
+		return ipHeaderBytes;
 	}
 
-	public void setHeaderBytes(long headerBytes) {
-		this.headerBytes = headerBytes;
+	// layer 3 header length setter
+	public void setIpHeaderBytes(long ipHeaderBytes) {
+		this.ipHeaderBytes = ipHeaderBytes;
+	}
+
+	// layer 4 header length getter
+	// this is what the old getHeaderBytes() used to return
+	public long getTransportHeaderBytes() {
+		return transportHeaderBytes;
+	}
+
+	// layer 4 header length setter
+	public void setTransportHeaderBytes(long transportHeaderBytes) {
+		this.transportHeaderBytes = transportHeaderBytes;
 	}
 
 	public boolean hasFlagFIN() {

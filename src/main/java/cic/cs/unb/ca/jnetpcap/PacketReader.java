@@ -132,6 +132,11 @@ public class PacketReader {
 					this.firstPacket = packet.getCaptureHeader().timestampInMillis();
 				this.lastPacket = packet.getCaptureHeader().timestampInMillis();
 
+				// set IP header length once here: it applies to all protocols (TCP, UDP, ICMP, SCTP, IGMP) since
+				// they all share the same IP header regardless of what's inside
+				// getPayloadLength() from class JHeader is in the inherited methods list of class Ip4 in the javadoc of jnetpcap
+				packetInfo.setIpHeaderBytes(ipv4.getHeaderLength());
+
 				// This check needs to be first because ICMP protocol may embed the contents of
 				// the original packet (so it will have tcp/udp headers as well).
 				if (packet.hasHeader(this.icmp)) {
@@ -140,6 +145,7 @@ public class PacketReader {
 					packetInfo.setDstPort(0);
 					packetInfo.setIcmpCode(icmp.code());
 					packetInfo.setIcmpType(icmp.type());
+
 				} else if(packet.hasHeader(this.tcp)){
 					packetInfo.setTCPWindow(tcp.window());
 					packetInfo.setSrcPort(tcp.source());
@@ -153,32 +159,34 @@ public class PacketReader {
 					packetInfo.setFlagECE(tcp.flags_ECE());
 					packetInfo.setFlagCWR(tcp.flags_CWR());
 					packetInfo.setFlagRST(tcp.flags_RST());
-					packetInfo.setPayloadBytes(tcp.getPayloadLength());
-					packetInfo.setHeaderBytes(tcp.getHeaderLength());
+					packetInfo.setPayloadBytes(tcp.getPayloadLength());  // layer 4 payload length; getPayloadLength() is in the javadoc
+					packetInfo.setTransportHeaderBytes(tcp.getHeaderLength());  // layer 4 header length  
 
 					TcpRetransmissionDTO tcpRetransmissionDTO = new TcpRetransmissionDTO(
 							this.ipv4.source(), tcp.seq(), tcp.ack(), tcp.getPayloadLength(),
 							tcp.window(), packet.getCaptureHeader().timestampInMicros());
 					packetInfo.setTcpRetransmissionDTO(tcpRetransmissionDTO);
 
-				}else if(packet.hasHeader(this.udp)){
+				} else if(packet.hasHeader(this.udp)){
 					packetInfo.setSrcPort(udp.source());
 					packetInfo.setDstPort(udp.destination());
-					packetInfo.setPayloadBytes(udp.getPayloadLength());
-					packetInfo.setHeaderBytes(udp.getHeaderLength());
+					packetInfo.setPayloadBytes(udp.getPayloadLength());  // layer 4 payload length
+					packetInfo.setTransportHeaderBytes(udp.getHeaderLength());  // layer 4 header length, always 8 bytes for UDP
 					packetInfo.setProtocol(ProtocolEnum.UDP);
-				}else if(packet.hasHeader(this.sctp)){
+
+				} else if(packet.hasHeader(this.sctp)){
 					packetInfo.setSrcPort(sctp.source());
 					packetInfo.setDstPort(sctp.destination());
-					packetInfo.setPayloadBytes(sctp.getPayloadLength());
-					packetInfo.setHeaderBytes(sctp.getHeaderLength());
+					packetInfo.setPayloadBytes(sctp.getPayloadLength());  // layer 4 payload length
+					packetInfo.setTransportHeaderBytes(sctp.getHeaderLength());  // layer 4 header length
 					packetInfo.setProtocol(ProtocolEnum.SCTP);
-			}else {
+
+			} else {
 
 					Ip4.Ip4Type ip4Type = this.ipv4.typeEnum();
 
 					switch (ip4Type) {
-						case IGMP:
+						case IGMP:  // layer 3 protocol
 							packetInfo.setProtocol(ProtocolEnum.IGMP);
 							break;
 						default:
@@ -233,18 +241,21 @@ public class PacketReader {
 				packetInfo.setSrc(this.ipv6.source());
 				packetInfo.setDst(this.ipv6.destination());
 				packetInfo.setTimeStamp(packet.getCaptureHeader().timestampInMillis());			
-				
+				// IPv6 header is always exactly 40 bytes (fixed, no options field like IPv4)
+    			packetInfo.setIpHeaderBytes(ipv6.getHeaderLength());
+
 				if(packet.hasHeader(this.tcp)){						
 					packetInfo.setSrcPort(tcp.source());
 					packetInfo.setDstPort(tcp.destination());
-					packetInfo.setPayloadBytes(tcp.getPayloadLength());
-					packetInfo.setHeaderBytes(tcp.getHeaderLength());
+					packetInfo.setPayloadBytes(tcp.getPayloadLength());  // layer 4 payload length
+					packetInfo.setTransportHeaderBytes(tcp.getHeaderLength());  // layer 4 header length
 					packetInfo.setProtocol(ProtocolEnum.TCP);
-				}else if(packet.hasHeader(this.udp)){
+
+				} else if(packet.hasHeader(this.udp)){
 					packetInfo.setSrcPort(udp.source());
 					packetInfo.setDstPort(udp.destination());
-					packetInfo.setPayloadBytes(udp.getPayloadLength());
-					packetInfo.setHeaderBytes(tcp.getHeaderLength());
+					packetInfo.setPayloadBytes(udp.getPayloadLength());  // layer 4 payload length
+					packetInfo.setTransportHeaderBytes(tcp.getHeaderLength());  // layer 4 header length
 					packetInfo.setProtocol(ProtocolEnum.UDP);
 				}		
 			}
@@ -402,19 +413,21 @@ public class PacketReader {
 				packetInfo = new BasicPacketInfo(idGen);
 				packetInfo.setSrc(protocol.getIpv6().source());
 				packetInfo.setDst(protocol.getIpv6().destination());
-				packetInfo.setTimeStamp(packet.getCaptureHeader().timestampInMillis());			
+				packetInfo.setTimeStamp(packet.getCaptureHeader().timestampInMillis());
+				// IPv6 header is always exactly 40 bytes (fixed, no options field like IPv4)
+    			packetInfo.setIpHeaderBytes(protocol.getIpv6().getHeaderLength());			
 				
 				if(packet.hasHeader(protocol.getTcp())){
 					packetInfo.setSrcPort(protocol.getTcp().source());
 					packetInfo.setDstPort(protocol.getTcp().destination());
-					packetInfo.setPayloadBytes(protocol.getTcp().getPayloadLength());
-					packetInfo.setHeaderBytes(protocol.getTcp().getHeaderLength());
+					packetInfo.setPayloadBytes(protocol.getTcp().getPayloadLength());  // layer 4 payload length
+					packetInfo.setTransportHeaderBytes(protocol.getTcp().getHeaderLength());  // layer 4 header length
 					packetInfo.setProtocol(ProtocolEnum.TCP);
 				}else if(packet.hasHeader(protocol.getUdp())){
 					packetInfo.setSrcPort(protocol.getUdp().source());
 					packetInfo.setDstPort(protocol.getUdp().destination());
-					packetInfo.setPayloadBytes(protocol.getUdp().getPayloadLength());
-					packetInfo.setHeaderBytes(protocol.getUdp().getHeaderLength());
+					packetInfo.setPayloadBytes(protocol.getUdp().getPayloadLength());  // layer 4 payload length
+					packetInfo.setTransportHeaderBytes(protocol.getUdp().getHeaderLength());  // layer 4 header length
 					packetInfo.setProtocol(ProtocolEnum.UDP);
 				}		
 			}
@@ -453,6 +466,9 @@ public class PacketReader {
 					this.firstPacket = packet.getCaptureHeader().timestampInMillis();
 				this.lastPacket = packet.getCaptureHeader().timestampInMillis();*/
 
+				// set IP header length once (same for all protocols inside this IP packet)
+    			packetInfo.setIpHeaderBytes(protocol.getIpv4().getHeaderLength());
+
 				if(packet.hasHeader(protocol.getTcp())){
 					packetInfo.setTCPWindow(protocol.getTcp().window());
 					packetInfo.setSrcPort(protocol.getTcp().source());
@@ -467,12 +483,12 @@ public class PacketReader {
 					packetInfo.setFlagCWR(protocol.getTcp().flags_CWR());
 					packetInfo.setFlagRST(protocol.getTcp().flags_RST());
 					packetInfo.setPayloadBytes(protocol.getTcp().getPayloadLength());
-					packetInfo.setHeaderBytes(protocol.getTcp().getHeaderLength());
-				}else if(packet.hasHeader(protocol.getUdp())){
+					packetInfo.setTransportHeaderBytes(protocol.getTcp().getHeaderLength());  // layer 4 header length
+				} else if(packet.hasHeader(protocol.getUdp())){
 					packetInfo.setSrcPort(protocol.getUdp().source());
 					packetInfo.setDstPort(protocol.getUdp().destination());
 					packetInfo.setPayloadBytes(protocol.getUdp().getPayloadLength());
-					packetInfo.setHeaderBytes(protocol.getUdp().getHeaderLength());
+					packetInfo.setTransportHeaderBytes(protocol.getUdp().getHeaderLength());  // layer 4 header length
 					packetInfo.setProtocol(ProtocolEnum.UDP);
 				} else {
 					int headerCount = packet.getHeaderCount();
