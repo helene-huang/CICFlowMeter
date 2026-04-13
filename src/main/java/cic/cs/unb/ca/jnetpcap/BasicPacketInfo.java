@@ -4,6 +4,17 @@ import java.util.Arrays;
 
 import org.jnetpcap.packet.format.FormatUtils;
 
+
+// Layer and PDU terminology 
+// PDU (Protocol Data Unit): the data unit at a given network layer, including
+// that layer's header plus everything it encapsulates
+// 		L3 PDU = packet = IP datagram = L3 (IP) header + L4 header + L4 payload
+// 		L4 PDU = segment = L4 unit = L4 (TCP/UDP/SCTP) header + L4 payload
+// "segment" is used loosely throughout to mean any L4 PDU regardless of protocol
+// strictly speaking, the correct terms should be: TCP segment, UDP datagram, etc.
+
+
+
 public class BasicPacketInfo {
 	
 /*  Basic Info to generate flows from packets  	*/
@@ -14,7 +25,7 @@ public class BasicPacketInfo {
     private    int dstPort;
     private    ProtocolEnum protocol = ProtocolEnum.DEFAULT;
     private    long   timeStamp;
-    private    long   payloadBytes;
+    private    long   payloadBytes;  // L4 payload length = segment payload length, in bytes
     private    String  flowId = null;  
 /* ******************************************** */    
     private    boolean flagFIN = false;
@@ -26,7 +37,8 @@ public class BasicPacketInfo {
 	private    boolean flagCWR = false;
 	private    boolean flagRST = false;
 	private	   int TCPWindow=0;
-	private	   long headerBytes;
+	private	   long headerBytes;  // L4 header length = segment header length, in bytes 
+	private long packetHeaderBytes; // L3 header length = packet header length, in bytes
 	private int payloadPacket=0;
 	/* ** ICMP FIELDS ** */
 	private int icmpCode = -1;
@@ -171,20 +183,34 @@ public class BasicPacketInfo {
 		return Arrays.equals(sourceIP, this.src);
 	}
 
+	// L4 payload length getter
 	public long getPayloadBytes() {
 		return payloadBytes;
 	}
 
+	// L4 payload length setter
 	public void setPayloadBytes(long payloadBytes) {
 		this.payloadBytes = payloadBytes;
 	}
 
+	// L4 header length getter
 	public long getHeaderBytes() {
 		return headerBytes;
 	}
 
+	// L4 header length setter
 	public void setHeaderBytes(long headerBytes) {
 		this.headerBytes = headerBytes;
+	}
+
+	// L3 header length getter
+	public long getPacketHeaderBytes() {
+		return packetHeaderBytes;
+	}	
+
+	// L3 header length setter
+	public void setPacketHeaderBytes(long packetHeaderBytes) {
+		this.packetHeaderBytes = packetHeaderBytes;
 	}
 
 	public boolean hasFlagFIN() {

@@ -5,11 +5,29 @@ import java.util.*;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.jnetpcap.packet.format.FormatUtils;
 
+
+// Layer and PDU terminology 
+// PDU (Protocol Data Unit): the data unit at a given network layer, including
+// that layer's header plus everything it encapsulates
+// 		L3 PDU = packet = IP datagram = L3 (IP) header + L4 header + L4 payload
+// 		L4 PDU = segment = L4 unit = L4 (TCP/UDP/SCTP) header + L4 payload
+// "segment" is used loosely throughout to mean any L4 PDU regardless of protocol
+// strictly speaking, the correct terms should be: TCP segment, UDP datagram, etc.
+
+
 public class BasicFlow {
 
     private final static String separator = ",";
+
+    // L3 PDU length (i.e., full wire-level packet length) statistics 
+    // original bug: these stats were fed only L4 payload bytes, so "packet length"
+    // features actually described payload size, not IP datagram size
+    // fix: packet length = L3 header + L4 header + L4 payload 
     private SummaryStatistics fwdPktStats = null;
     private SummaryStatistics bwdPktStats = null;
+    private SummaryStatistics flowLengthStats = null;
+    
+    
     private List<BasicPacketInfo> forward = null;
     private List<BasicPacketInfo> backward = null;
 
@@ -17,6 +35,9 @@ public class BasicFlow {
     private long backwardBytes;
     private long fHeaderBytes;
     private long bHeaderBytes;
+
+    private long fPacketHeaderBytes;  // running total of fwd L3 header bytes
+    private long bPacketHeaderBytes;  // running total of bwd L3 header bytes
 
     // Is always the value true in this application
     private boolean isBidirectional;
@@ -53,7 +74,6 @@ public class BasicFlow {
     private SummaryStatistics flowIAT = null;
     private SummaryStatistics forwardIAT = null;
     private SummaryStatistics backwardIAT = null;
-    private SummaryStatistics flowLengthStats = null;
     private SummaryStatistics flowActive = null;
     private SummaryStatistics flowIdle = null;
 
@@ -195,13 +215,28 @@ public class BasicFlow {
         this.flowLastSeen = packet.getTimeStamp();
         this.startActiveTime = packet.getTimeStamp();
         detectUpdateSubflows(packet);
-        this.flowLengthStats.addValue((double) packet.getPayloadBytes());
+
+        // track fwd and bwd packet length stats 
+        this.flowLengthStats.addValue(
+            (double)(packet.getPacketHeaderBytes()
+                + packet.getHeaderBytes()
+                + packet.getPayloadBytes())
+        ); 
 
         if (Arrays.equals(this.src, packet.getSrc())) {
             this.min_seg_size_forward = packet.getHeaderBytes();
             Init_Win_bytes_forward = packet.getTCPWindow();
-            this.fwdPktStats.addValue((double) packet.getPayloadBytes());
+
+            // track fwd packet length stats 
+            this.fwdPktStats.addValue(
+                (double)(packet.getPacketHeaderBytes()
+                    + packet.getHeaderBytes()
+                    + packet.getPayloadBytes())
+            );
+
             this.fHeaderBytes = packet.getHeaderBytes();
+            this.fPacketHeaderBytes = packet.getPacketHeaderBytes();
+
             this.forwardLastSeen = packet.getTimeStamp();
             this.forwardBytes += packet.getPayloadBytes();
             this.forward.add(packet);
@@ -223,8 +258,18 @@ public class BasicFlow {
         } else {
             this.min_seg_size_backward = packet.getHeaderBytes();
             Init_Win_bytes_backward = packet.getTCPWindow();
-            this.bwdPktStats.addValue((double) packet.getPayloadBytes());
+
+            // track bwd packet length stats 
+            this.bwdPktStats.addValue(
+                (double)(packet.getPacketHeaderBytes()
+                    + packet.getHeaderBytes()
+                    + packet.getPayloadBytes())
+            );
+
             this.bHeaderBytes = packet.getHeaderBytes();
+            this.bPacketHeaderBytes = packet.getPacketHeaderBytes();
+
+
             this.backwardLastSeen = packet.getTimeStamp();
             this.backwardBytes += packet.getPayloadBytes();
             this.backward.add(packet);
@@ -283,13 +328,29 @@ public class BasicFlow {
         handleTcpRetransmissionFields(packet);
         long currentTimestamp = packet.getTimeStamp();
         if (isBidirectional) {
-            this.flowLengthStats.addValue((double) packet.getPayloadBytes());
+
+            // track fwd and bwd packet length stats 
+            this.flowLengthStats.addValue(
+                (double)(packet.getPacketHeaderBytes()
+                    + packet.getHeaderBytes()
+                    + packet.getPayloadBytes())
+            ); 
+
             if (Arrays.equals(this.src, packet.getSrc())) {
                 if (packet.getPayloadBytes() >= 1) {
                     this.Act_data_pkt_forward++;
                 }
-                this.fwdPktStats.addValue((double) packet.getPayloadBytes());
+
+                // track fwd packet length stats 
+                this.fwdPktStats.addValue(
+                    (double)(packet.getPacketHeaderBytes()
+                        + packet.getHeaderBytes()
+                        + packet.getPayloadBytes())
+                );
+
                 this.fHeaderBytes += packet.getHeaderBytes();
+                this.fPacketHeaderBytes += packet.getPacketHeaderBytes();
+
                 this.forward.add(packet);
                 this.forwardBytes += packet.getPayloadBytes();
                 if (this.forward.size() > 1)
@@ -312,14 +373,24 @@ public class BasicFlow {
                 if (packet.getPayloadBytes() >= 1) {
                     this.Act_data_pkt_backward++;
                 }
-                this.bwdPktStats.addValue((double) packet.getPayloadBytes());
+
+                // track bwd packet length stats 
+                this.bwdPktStats.addValue(
+                    (double)(packet.getPacketHeaderBytes()
+                        + packet.getHeaderBytes()
+                        + packet.getPayloadBytes())
+                );
+
                 // set Init_win_bytes_backward if not been set. The set logic isn't 100%
                 // accurate, since it technically takes the first non-zero value, but should
                 // be good enough for most cases.
                 if (Init_Win_bytes_backward == 0) {
                     Init_Win_bytes_backward = packet.getTCPWindow();
                 }
+
                 this.bHeaderBytes += packet.getHeaderBytes();
+                this.bPacketHeaderBytes += packet.getPacketHeaderBytes();
+
                 this.backward.add(packet);
                 this.backwardBytes += packet.getPayloadBytes();
                 if (this.backward.size() > 1)
@@ -343,9 +414,22 @@ public class BasicFlow {
             if (packet.getPayloadBytes() >= 1) {
                 this.Act_data_pkt_forward++;
             }
-            this.fwdPktStats.addValue((double) packet.getPayloadBytes());
-            this.flowLengthStats.addValue((double) packet.getPayloadBytes());
+
+            this.fwdPktStats.addValue(
+                (double)(packet.getPacketHeaderBytes()
+                    + packet.getHeaderBytes()
+                    + packet.getPayloadBytes())
+            );
+
+            this.flowLengthStats.addValue(
+                (double)(packet.getPacketHeaderBytes()
+                    + packet.getHeaderBytes()
+                    + packet.getPayloadBytes())
+            ); 
+
             this.fHeaderBytes += packet.getHeaderBytes();
+            this.fPacketHeaderBytes += packet.getPacketHeaderBytes();
+
             this.forward.add(packet);
             this.forwardBytes += packet.getPayloadBytes();
             this.forwardIAT.addValue(currentTimestamp - this.forwardLastSeen);
@@ -785,7 +869,7 @@ public class BasicFlow {
         }
 
         dump += getDownUpRatio() + ",";
-        dump += getAvgPacketSize() + ",";
+        //dump += getAvgPacketSize() + ",";
         dump += fAvgSegmentSize() + ",";
         dump += bAvgSegmentSize() + ",";
         dump += this.fHeaderBytes + ",";  //this feature is duplicated
@@ -1110,6 +1194,14 @@ public class BasicFlow {
         return bHeaderBytes;
     }
 
+    public long getFwdPacketHeaderLength() {
+        return fPacketHeaderBytes;
+    }
+    
+    public long getBwdPacketHeaderLength() {
+        return bPacketHeaderBytes;
+    }
+
     public double getMinPacketLength() {
         return (forward.size() > 0 || backward.size() > 0) ? flowLengthStats.getMin() : 0;
     }
@@ -1420,7 +1512,12 @@ public class BasicFlow {
         dump.append(fwdTcpRetransCnt+bwdTcpRetransCnt).append(separator);                   // 90
 
         dump.append(cumulativeConnectionDuration).append(separator);                //91
-        dump.append(getLabel());                                                    //92
+
+        // sum of L3 header (packet header) lengths in bytes
+        dump.append(fPacketHeaderBytes).append(separator);          //92                               
+        dump.append(bPacketHeaderBytes).append(separator);          //93
+
+        dump.append(getLabel());                                                    //94
 
         return dump.toString();
     }

@@ -20,6 +20,16 @@ import org.jnetpcap.protocol.vpn.L2TP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+// Layer and PDU terminology 
+// PDU (Protocol Data Unit): the data unit at a given network layer, including
+// that layer's header plus everything it encapsulates
+// 		L3 PDU = packet = IP datagram = L3 (IP) header + L4 header + L4 payload
+// 		L4 PDU = segment = L4 unit = L4 (TCP/UDP/SCTP) header + L4 payload
+// "segment" is used loosely throughout to mean any L4 PDU regardless of protocol
+// strictly speaking, the correct terms should be: TCP segment, UDP datagram, etc.
+
+
 public class PacketReader {
 
 	private static final Logger logger = LoggerFactory.getLogger(PacketReader.class);
@@ -132,6 +142,10 @@ public class PacketReader {
 					this.firstPacket = packet.getCaptureHeader().timestampInMillis();
 				this.lastPacket = packet.getCaptureHeader().timestampInMillis();
 
+				// set L3 header length
+				// getHeaderLength() from class JHeader is in the inherited methods list of class Ip4 in the javadoc of jnetpcap
+				packetInfo.setPacketHeaderBytes(ipv4.getHeaderLength());
+
 				// This check needs to be first because ICMP protocol may embed the contents of
 				// the original packet (so it will have tcp/udp headers as well).
 				if (packet.hasHeader(this.icmp)) {
@@ -233,7 +247,11 @@ public class PacketReader {
 				packetInfo.setSrc(this.ipv6.source());
 				packetInfo.setDst(this.ipv6.destination());
 				packetInfo.setTimeStamp(packet.getCaptureHeader().timestampInMillis());			
-				
+
+				// set L3 header length
+				// getHeaderLength() from class JHeader is in the inherited methods list of class Ip6 in the javadoc of jnetpcap
+				packetInfo.setPacketHeaderBytes(ipv6.getHeaderLength());
+
 				if(packet.hasHeader(this.tcp)){						
 					packetInfo.setSrcPort(tcp.source());
 					packetInfo.setDstPort(tcp.destination());
@@ -404,6 +422,9 @@ public class PacketReader {
 				packetInfo.setDst(protocol.getIpv6().destination());
 				packetInfo.setTimeStamp(packet.getCaptureHeader().timestampInMillis());			
 				
+				// set L3 header length
+				packetInfo.setPacketHeaderBytes(protocol.getIpv6().getHeaderLength());
+
 				if(packet.hasHeader(protocol.getTcp())){
 					packetInfo.setSrcPort(protocol.getTcp().source());
 					packetInfo.setDstPort(protocol.getTcp().destination());
@@ -452,6 +473,9 @@ public class PacketReader {
 				/*if(this.firstPacket == 0L)
 					this.firstPacket = packet.getCaptureHeader().timestampInMillis();
 				this.lastPacket = packet.getCaptureHeader().timestampInMillis();*/
+
+				// set L3 header length
+				packetInfo.setPacketHeaderBytes(protocol.getIpv4().getHeaderLength());
 
 				if(packet.hasHeader(protocol.getTcp())){
 					packetInfo.setTCPWindow(protocol.getTcp().window());

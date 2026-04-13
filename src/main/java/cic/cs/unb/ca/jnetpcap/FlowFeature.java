@@ -108,7 +108,11 @@ public enum FlowFeature {
 
     cum_cnx_time("Total Connection Flow Time", "TCFT"), // 91
 	
-	Label("Label","LBL",new String[]{"NeedManualLabel"});	//92
+    // sum of L3 header (packet header) lengths in bytes
+    fw_ip_hdr_len("Total Length of Fwd Packet Headers","FwPktHL"),  //92               
+    bw_ip_hdr_len("Total Length of Bwd Packet Headers","BwPktHL"),  //93 
+
+	Label("Label","LBL",new String[]{"NeedManualLabel"});	//94
 
 
 	protected static final Logger logger = LoggerFactory.getLogger(FlowFeature.class);
