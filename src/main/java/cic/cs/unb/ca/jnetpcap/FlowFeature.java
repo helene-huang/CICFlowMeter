@@ -72,7 +72,7 @@ public enum FlowFeature {
     CWR_cnt("CWR Flag Count","CWRCT"),				//58
     ece_cnt("ECE Flag Count","ECECT"),				//59
     down_up_ratio("Down/Up Ratio","D/URO"),			//60
-    pkt_size_avg("Average Packet Size","PSAG"),			//61
+    // pkt_size_avg("Average Packet Size","PSAG"),			//61: duplicate of 49, "Packet Length Mean"
     fw_seg_avg("Fwd Segment Size Avg","FwSgAG"),		//62
     bw_seg_avg("Bwd Segment Size Avg","BwSgAG"),		//63
     fw_byt_blk_avg("Fwd Bytes/Bulk Avg","FwB/BAG"),		//64   62 is duplicated with 43,so has been deleted
@@ -192,7 +192,7 @@ public enum FlowFeature {
 		features.add(bw_hdr_len);
 		features.add(fw_pkt_s);
 		features.add(bw_pkt_s);
-		features.add(pkt_size_avg);
+		// features.add(pkt_size_avg);
 		features.add(fw_seg_avg);
 		features.add(bw_seg_avg);
 		return features;

@@ -381,12 +381,15 @@ public class BasicFlow {
         return 0;
     }
 
+    // duplicate of getPacketLengthMean() 
+    /* 
     public double getAvgPacketSize() {
         if (this.packetCount() > 0) {
             return (this.flowLengthStats.getSum() / this.packetCount());
         }
         return 0;
     }
+    */
 
     public double fAvgSegmentSize() {
         if (this.forward.size() != 0)
@@ -1360,7 +1363,7 @@ public class BasicFlow {
         dump.append(flagCounts.get("ECE").value).append(separator);                  //59
 
         dump.append(getDownUpRatio()).append(separator);                            //60
-        dump.append(getAvgPacketSize()).append(separator);                            //61
+        // dump.append(getAvgPacketSize()).append(separator);                            //61: duplicate of 49, "Packet Length Mean"
         dump.append(fAvgSegmentSize()).append(separator);                            //62
         dump.append(bAvgSegmentSize()).append(separator);                            //63
         //dump.append(fHeaderBytes).append(separator);								//62 dupicate with 43
