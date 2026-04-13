@@ -13,23 +13,28 @@ import org.jnetpcap.packet.format.FormatUtils;
 public class BasicFlow {
     private final static String separator = ",";
 
-    // true IP datagram length stats (L3 header + L4 header + L4 payload)
+    // true packet, i.e., IP datagram, i.e., L3 protocol data unit (PDU) length stats 
+    // calculated as: L3 header + L4 header + L4 payload
     // "packet" = full IP datagram as seen on the wire 
-    // previously, the "packets" stats were only about L4 payloads 
-    // new: was never actually calculated before 
+    // previous mistake: the "packets" stats were only about L4 payloads 
+    // -> the true packet lengths were never actually calculated before 
     private SummaryStatistics fwdPktStats = null;  // only for fwd packets
     private SummaryStatistics bwdPktStats = null;  // only for bwd packets
-    private SummaryStatistics flowLengthStats = null;  // for both direction combined
+    private SummaryStatistics flowLengthStats = null;  // for both directions combined
 
-    // L4 protocol data unit (PDU) length stats (L4 header + L4 payload) per direction
+    // L4 protocol PDU length stats, per direction
+    // calculated as L4 header + L4 payload 
     // note: we use "segment" to loosely refers to any L4 PDU regardless of protocol for simplicity
     // strictly: TCP -> segment, UDP -> datagram, SCTP -> packet, etc.
-    // new: was never actually calculated before 
+    // previous mistakes: the segment length features ("Fwd Segment Size Avg" and "Bwd Segment Size Avg") had the same values as the packet length means
+    // and the fwd/bwd segment length min features were calculated as the min of the L4 headers 
+    // -> the true segment lengths were never actually calculated before 
     private SummaryStatistics fwdSegmentStats = null;
     private SummaryStatistics bwdSegmentStats = null;
 
     // stats object for L4 payload length
     // was previously named fwdPktStats and bwdPktStats, which was misleading
+    // the following two variables were created to ensure backward compability
     private SummaryStatistics fwdPayloadStats = null;
     private SummaryStatistics bwdPayloadStats = null;
 
@@ -245,12 +250,12 @@ public class BasicFlow {
             this.fwdPayloadStats.addValue((double) packet.getPayloadBytes());  // L4 payload only
             this.fwdSegmentStats.addValue(
                 (double)(packet.getTransportHeaderBytes() + packet.getPayloadBytes())
-            );  // L4 PDU: L4 header + L4 payload
+            );  // segment length (L4 PDU): L4 header + L4 payload
             this.fwdPktStats.addValue(
                 (double)(packet.getIpHeaderBytes()
                     + packet.getTransportHeaderBytes()
                     + packet.getPayloadBytes())
-            );  // true packet length: L3 header + L4 header + L4 payload
+            );  // true packet length (L3 PDU): L3 header + L4 header + L4 payload
 
             this.fTransportHeaderBytes = packet.getTransportHeaderBytes();
             this.fIpHeaderBytes = packet.getIpHeaderBytes();
