@@ -107,22 +107,18 @@ public enum FlowFeature {
     total_tcp_retrans("Total TCP Retrans. Count", "TotalTcpRt"), //92
 
     cum_cnx_time("Total Connection Flow Time", "TCFT"), //93
-	
-    // sum of L3 header (packet header) lengths in bytes
-    fw_ip_hdr_len("Total Length of Fwd Packet Headers","FwPktHL"),  //94              
-    bw_ip_hdr_len("Total Length of Bwd Packet Headers","BwPktHL"),  //95
 
     // L4 payload (= segment payload) length stats
-    fw_pay_l_max("Fwd Segment Payload Length Max","FwSPaLMA"),      //96
-    fw_pay_l_min("Fwd Segment Payload Length Min","FwSPaLMI"),      //97
-    fw_pay_l_avg("Fwd Segment Payload Length Mean","FwSPaLAG"),     //98
-    fw_pay_l_std("Fwd Segment Payload Length Std","FwSPaLSD"),      //99
-    bw_pay_l_max("Bwd Segment Payload Length Max","BwSPaLMA"),      //100
-    bw_pay_l_min("Bwd Segment Payload Length Min","BwSPaLMI"),      //101
-    bw_pay_l_avg("Bwd Segment Payload Length Mean","BwSPaLAG"),     //102
-    bw_pay_l_std("Bwd Segment Payload Length Std","BwSPaLSD"),      //103
+    fw_pay_l_max("Fwd Segment Payload Length Max","FwSPaLMA"),      //94
+    fw_pay_l_min("Fwd Segment Payload Length Min","FwSPaLMI"),      //95
+    fw_pay_l_avg("Fwd Segment Payload Length Mean","FwSPaLAG"),     //96
+    fw_pay_l_std("Fwd Segment Payload Length Std","FwSPaLSD"),      //97
+    bw_pay_l_max("Bwd Segment Payload Length Max","BwSPaLMA"),      //98
+    bw_pay_l_min("Bwd Segment Payload Length Min","BwSPaLMI"),      //99
+    bw_pay_l_avg("Bwd Segment Payload Length Mean","BwSPaLAG"),     //100
+    bw_pay_l_std("Bwd Segment Payload Length Std","BwSPaLSD"),      //101
 
-	Label("Label","LBL",new String[]{"NeedManualLabel"});	//104
+	Label("Label","LBL",new String[]{"NeedManualLabel"});	//102
 
 
 	protected static final Logger logger = LoggerFactory.getLogger(FlowFeature.class);

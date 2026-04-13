@@ -50,9 +50,6 @@ public class BasicFlow {
     private long fHeaderBytes;
     private long bHeaderBytes;
 
-    private long fPacketHeaderBytes;  // running total of fwd L3 header bytes
-    private long bPacketHeaderBytes;  // running total of bwd L3 header bytes
-
     // Is always the value true in this application
     private boolean isBidirectional;
 
@@ -258,7 +255,6 @@ public class BasicFlow {
             );
 
             this.fHeaderBytes = packet.getHeaderBytes();
-            this.fPacketHeaderBytes = packet.getPacketHeaderBytes();
 
             this.forwardLastSeen = packet.getTimeStamp();
             this.forwardBytes += packet.getPayloadBytes();
@@ -297,8 +293,6 @@ public class BasicFlow {
             );
 
             this.bHeaderBytes = packet.getHeaderBytes();
-            this.bPacketHeaderBytes = packet.getPacketHeaderBytes();
-
 
             this.backwardLastSeen = packet.getTimeStamp();
             this.backwardBytes += packet.getPayloadBytes();
@@ -387,7 +381,6 @@ public class BasicFlow {
                 );
 
                 this.fHeaderBytes += packet.getHeaderBytes();
-                this.fPacketHeaderBytes += packet.getPacketHeaderBytes();
 
                 this.forward.add(packet);
                 this.forwardBytes += packet.getPayloadBytes();
@@ -434,7 +427,6 @@ public class BasicFlow {
                 }
 
                 this.bHeaderBytes += packet.getHeaderBytes();
-                this.bPacketHeaderBytes += packet.getPacketHeaderBytes();
 
                 this.backward.add(packet);
                 this.backwardBytes += packet.getPayloadBytes();
@@ -478,7 +470,6 @@ public class BasicFlow {
             );
 
             this.fHeaderBytes += packet.getHeaderBytes();
-            this.fPacketHeaderBytes += packet.getPacketHeaderBytes();
 
             this.forward.add(packet);
             this.forwardBytes += packet.getPayloadBytes();
@@ -1265,14 +1256,6 @@ public class BasicFlow {
         return bHeaderBytes;
     }
 
-    public long getFwdPacketHeaderLength() {
-        return fPacketHeaderBytes;
-    }
-    
-    public long getBwdPacketHeaderLength() {
-        return bPacketHeaderBytes;
-    }
-
     public double getMinPacketLength() {
         return (forward.size() > 0 || backward.size() > 0) ? flowLengthStats.getMin() : 0;
     }
@@ -1584,21 +1567,17 @@ public class BasicFlow {
 
         dump.append(cumulativeConnectionDuration).append(separator);                //93
 
-        // sum of L3 header (packet header) lengths in bytes
-        dump.append(fPacketHeaderBytes).append(separator);          //94                               
-        dump.append(bPacketHeaderBytes).append(separator);          //95
-
         // L4 payload (= segment payload) length stats
-        dump.append(getFwdSegPayloadLengthMax()).append(separator);     //96
-        dump.append(getFwdSegPayloadLengthMin()).append(separator);     //97
-        dump.append(getFwdSegPayloadLengthMean()).append(separator);    //98
-        dump.append(getFwdSegPayloadLengthStd()).append(separator);     //99
-        dump.append(getBwdSegPayloadLengthMax()).append(separator);     //100
-        dump.append(getBwdSegPayloadLengthMin()).append(separator);     //101
-        dump.append(getBwdSegPayloadLengthMean()).append(separator);    //102
-        dump.append(getBwdSegPayloadLengthStd()).append(separator);     //103
+        dump.append(getFwdSegPayloadLengthMax()).append(separator);     //94
+        dump.append(getFwdSegPayloadLengthMin()).append(separator);     //95
+        dump.append(getFwdSegPayloadLengthMean()).append(separator);    //96
+        dump.append(getFwdSegPayloadLengthStd()).append(separator);     //97
+        dump.append(getBwdSegPayloadLengthMax()).append(separator);     //98
+        dump.append(getBwdSegPayloadLengthMin()).append(separator);     //99
+        dump.append(getBwdSegPayloadLengthMean()).append(separator);    //100
+        dump.append(getBwdSegPayloadLengthStd()).append(separator);     //101
 
-        dump.append(getLabel());                                                    //104
+        dump.append(getLabel());                                        //102
 
         return dump.toString();
     }
