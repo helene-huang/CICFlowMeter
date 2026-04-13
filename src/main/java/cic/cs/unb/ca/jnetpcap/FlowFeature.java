@@ -112,7 +112,17 @@ public enum FlowFeature {
     fw_ip_hdr_len("Total Length of Fwd Packet Headers","FwPktHL"),  //92               
     bw_ip_hdr_len("Total Length of Bwd Packet Headers","BwPktHL"),  //93 
 
-	Label("Label","LBL",new String[]{"NeedManualLabel"});	//94
+    // L4 payload (= segment payload) length stats
+    fw_pay_l_max("Fwd Segment Payload Length Max","FwSPaLMA"),      //94
+    fw_pay_l_min("Fwd Segment Payload Length Min","FwSPaLMI"),      //95
+    fw_pay_l_avg("Fwd Segment Payload Length Mean","FwSPaLAG"),     //96 
+    fw_pay_l_std("Fwd Segment Payload Length Std","FwSPaLSD"),      //97
+    bw_pay_l_max("Bwd Segment Payload Length Max","BwSPaLMA"),      //98
+    bw_pay_l_min("Bwd Segment Payload Length Min","BwSPaLMI"),      //99
+    bw_pay_l_avg("Bwd Segment Payload Length Mean","BwSPaLAG"),     //100
+    bw_pay_l_std("Bwd Segment Payload Length Std","BwSPaLSD"),      //101
+
+	Label("Label","LBL",new String[]{"NeedManualLabel"});	//102
 
 
 	protected static final Logger logger = LoggerFactory.getLogger(FlowFeature.class);

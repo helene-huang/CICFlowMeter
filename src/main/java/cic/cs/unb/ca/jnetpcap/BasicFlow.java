@@ -27,7 +27,11 @@ public class BasicFlow {
     private SummaryStatistics bwdPktStats = null;
     private SummaryStatistics flowLengthStats = null;
     
-    
+    // L4 payload length statistics
+    // originally mislabeled as "packet" length stats
+    private SummaryStatistics fwdSegPayloadStats = null;
+    private SummaryStatistics bwdSegPayloadStats = null;
+
     private List<BasicPacketInfo> forward = null;
     private List<BasicPacketInfo> backward = null;
 
@@ -174,6 +178,8 @@ public class BasicFlow {
         this.flowLengthStats = new SummaryStatistics();
         this.fwdPktStats = new SummaryStatistics();
         this.bwdPktStats = new SummaryStatistics();
+        this.fwdSegPayloadStats = new SummaryStatistics();
+        this.bwdSegPayloadStats = new SummaryStatistics();
         this.flagCounts = new HashMap<String, MutableInt>();
         initFlags();
         this.forwardBytes = 0L;
@@ -234,6 +240,9 @@ public class BasicFlow {
                     + packet.getPayloadBytes())
             );
 
+            // track fwd L4 payload only
+            this.fwdSegPayloadStats.addValue((double) packet.getPayloadBytes());  
+
             this.fHeaderBytes = packet.getHeaderBytes();
             this.fPacketHeaderBytes = packet.getPacketHeaderBytes();
 
@@ -265,6 +274,9 @@ public class BasicFlow {
                     + packet.getHeaderBytes()
                     + packet.getPayloadBytes())
             );
+
+            // track bwd L4 payload only
+            this.bwdSegPayloadStats.addValue((double) packet.getPayloadBytes()); 
 
             this.bHeaderBytes = packet.getHeaderBytes();
             this.bPacketHeaderBytes = packet.getPacketHeaderBytes();
@@ -348,6 +360,9 @@ public class BasicFlow {
                         + packet.getPayloadBytes())
                 );
 
+                // track L4 payload only
+                this.fwdSegPayloadStats.addValue((double) packet.getPayloadBytes()); 
+
                 this.fHeaderBytes += packet.getHeaderBytes();
                 this.fPacketHeaderBytes += packet.getPacketHeaderBytes();
 
@@ -380,6 +395,9 @@ public class BasicFlow {
                         + packet.getHeaderBytes()
                         + packet.getPayloadBytes())
                 );
+
+                // track L4 payload only
+                this.bwdSegPayloadStats.addValue((double) packet.getPayloadBytes()); 
 
                 // set Init_win_bytes_backward if not been set. The set logic isn't 100%
                 // accurate, since it technically takes the first non-zero value, but should
@@ -426,6 +444,8 @@ public class BasicFlow {
                     + packet.getHeaderBytes()
                     + packet.getPayloadBytes())
             ); 
+
+            this.fwdSegPayloadStats.addValue((double) packet.getPayloadBytes()); 
 
             this.fHeaderBytes += packet.getHeaderBytes();
             this.fPacketHeaderBytes += packet.getPacketHeaderBytes();
@@ -1109,6 +1129,34 @@ public class BasicFlow {
         return (bwdPktStats.getN() > 0L) ? bwdPktStats.getStandardDeviation() : 0;
     }
 
+    // fwd L4 payload (= segment payload) stats -- used to be called "packet" length stats in the original version
+    public double getFwdSegPayloadLengthMax() {
+    return (fwdSegPayloadStats.getN() > 0) ? fwdSegPayloadStats.getMax() : 0;
+    }
+    public double getFwdSegPayloadLengthMin() {
+        return (fwdSegPayloadStats.getN() > 0) ? fwdSegPayloadStats.getMin() : 0;
+    }
+    public double getFwdSegPayloadLengthMean() {
+        return (fwdSegPayloadStats.getN() > 0) ? fwdSegPayloadStats.getMean() : 0;
+    }
+    public double getFwdSegPayloadLengthStd() {
+        return (fwdSegPayloadStats.getN() > 0) ? fwdSegPayloadStats.getStandardDeviation() : 0;
+    }
+
+    // bwd L4 payload stats 
+    public double getBwdSegPayloadLengthMax() {
+    return (bwdSegPayloadStats.getN() > 0) ? bwdSegPayloadStats.getMax() : 0;
+    }
+    public double getBwdSegPayloadLengthMin() {
+        return (bwdSegPayloadStats.getN() > 0) ? bwdSegPayloadStats.getMin() : 0;
+    }
+    public double getBwdSegPayloadLengthMean() {
+        return (bwdSegPayloadStats.getN() > 0) ? bwdSegPayloadStats.getMean() : 0;
+    }
+    public double getBwdSegPayloadLengthStd() {
+        return (bwdSegPayloadStats.getN() > 0) ? bwdSegPayloadStats.getStandardDeviation() : 0;
+    }
+
     public double getFlowBytesPerSec() {
         //flow duration is in microseconds, therefore packets per seconds = packets / (duration/1000000)
         return ((double) (forwardBytes + backwardBytes)) / ((double) getFlowDuration() / 1000000L);
@@ -1517,7 +1565,17 @@ public class BasicFlow {
         dump.append(fPacketHeaderBytes).append(separator);          //92                               
         dump.append(bPacketHeaderBytes).append(separator);          //93
 
-        dump.append(getLabel());                                                    //94
+        // L4 payload (= segment payload) length stats
+        dump.append(getFwdSegPayloadLengthMax()).append(separator);     //94
+        dump.append(getFwdSegPayloadLengthMin()).append(separator);     //95
+        dump.append(getFwdSegPayloadLengthMean()).append(separator);    //96
+        dump.append(getFwdSegPayloadLengthStd()).append(separator);     //97
+        dump.append(getBwdSegPayloadLengthMax()).append(separator);     //98
+        dump.append(getBwdSegPayloadLengthMin()).append(separator);     //99
+        dump.append(getBwdSegPayloadLengthMean()).append(separator);    //100
+        dump.append(getBwdSegPayloadLengthStd()).append(separator);     //101
+
+        dump.append(getLabel());                                                    //102
 
         return dump.toString();
     }
