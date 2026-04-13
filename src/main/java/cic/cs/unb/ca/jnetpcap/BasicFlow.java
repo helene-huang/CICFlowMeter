@@ -904,7 +904,7 @@ public class BasicFlow {
             dump += this.flowLengthStats.getMax() + ",";
             dump += this.flowLengthStats.getMean() + ",";
             dump += this.flowLengthStats.getStandardDeviation() + ",";
-            dump += flowLengthStats.getVariance() + ",";
+            //dump += flowLengthStats.getVariance() + ",";
         } else {
             dump += "0,0,0,0,";
         }
@@ -1501,13 +1501,13 @@ public class BasicFlow {
             dump.append(flowLengthStats.getMax()).append(separator);                //48
             dump.append(flowLengthStats.getMean()).append(separator);                //49
             dump.append(flowLengthStats.getStandardDeviation()).append(separator);    //50
-            dump.append(flowLengthStats.getVariance()).append(separator);            //51
+            // dump.append(flowLengthStats.getVariance()).append(separator);            //51
         } else {//seem to less one
             dump.append(0).append(separator);
             dump.append(0).append(separator);
             dump.append(0).append(separator);
             dump.append(0).append(separator);
-            dump.append(0).append(separator);
+            // dump.append(0).append(separator);
         }
 
 		/*for(MutableInt v:flagCounts.values()) {

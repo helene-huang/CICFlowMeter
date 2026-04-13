@@ -62,7 +62,7 @@ public enum FlowFeature {
     pkt_len_max("Packet Length Max","PLMA"),			//48
     pkt_len_avg("Packet Length Mean","PLAG"),			//49
     pkt_len_std("Packet Length Std","PLSD"),			//50
-    pkt_len_var("Packet Length Variance","PLVA"),		//51
+    // pkt_len_var("Packet Length Variance","PLVA"),		//51: directly derived from 50, as variance is the square of std
     fin_cnt("FIN Flag Count","FINCT"),				//52
     syn_cnt("SYN Flag Count","SYNCT"),				//53
     rst_cnt("RST Flag Count","RSTCT"),				//54
