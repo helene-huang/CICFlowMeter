@@ -117,8 +117,12 @@ public enum FlowFeature {
     bw_pay_l_min("Bwd Segment Payload Length Min","BwSPaLMI"),      //99
     bw_pay_l_avg("Bwd Segment Payload Length Mean","BwSPaLAG"),     //100
     bw_pay_l_std("Bwd Segment Payload Length Std","BwSPaLSD"),      //101
+    pay_l_max("Segment Payload Length Max","SPaLMA"),            //102
+    pay_l_min("Segment Payload Length Min","SPaLMI"),            //103
+    pay_l_avg("Segment Payload Length Mean","SPaLAG"),           //104
+    pay_l_std("Segment Payload Length Std","SPaLSD"),            //105
 
-	Label("Label","LBL",new String[]{"NeedManualLabel"});	//102
+	Label("Label","LBL",new String[]{"NeedManualLabel"});	        //106
 
 
 	protected static final Logger logger = LoggerFactory.getLogger(FlowFeature.class);

@@ -31,6 +31,7 @@ public class BasicFlow {
     // originally mislabeled as "packet" length stats
     private SummaryStatistics fwdSegPayloadStats = null;
     private SummaryStatistics bwdSegPayloadStats = null;
+    private SummaryStatistics bidirSegPayloadStats = null;
 
     // L4 PDU ("segment") length statistics 
     // original bugs: 
@@ -185,6 +186,7 @@ public class BasicFlow {
         this.bwdPktStats = new SummaryStatistics();
         this.fwdSegPayloadStats = new SummaryStatistics();
         this.bwdSegPayloadStats = new SummaryStatistics();
+        this.bidirSegPayloadStats = new SummaryStatistics();
         this.fwdSegmentStats = new SummaryStatistics();
         this.bwdSegmentStats = new SummaryStatistics();
         this.flagCounts = new HashMap<String, MutableInt>();
@@ -235,6 +237,10 @@ public class BasicFlow {
                 + packet.getHeaderBytes()
                 + packet.getPayloadBytes())
         ); 
+
+        // track fwd and bwd L4 payload stats
+        this.bidirSegPayloadStats.addValue((double)(packet.getPayloadBytes())); 
+
 
         if (Arrays.equals(this.src, packet.getSrc())) {
             Init_Win_bytes_forward = packet.getTCPWindow();
@@ -360,6 +366,9 @@ public class BasicFlow {
                     + packet.getPayloadBytes())
             ); 
 
+            // track fwd and bwd L4 payload stats
+            this.bidirSegPayloadStats.addValue((double)(packet.getPayloadBytes())); 
+
             if (Arrays.equals(this.src, packet.getSrc())) {
                 if (packet.getPayloadBytes() >= 1) {
                     this.Act_data_pkt_forward++;
@@ -462,6 +471,8 @@ public class BasicFlow {
                     + packet.getHeaderBytes()
                     + packet.getPayloadBytes())
             ); 
+
+            this.bidirSegPayloadStats.addValue((double)(packet.getPayloadBytes())); 
 
             this.fwdSegPayloadStats.addValue((double) packet.getPayloadBytes()); 
 
@@ -1276,6 +1287,20 @@ public class BasicFlow {
         return (forward.size() > 0 || backward.size() > 0) ? flowLengthStats.getVariance() : 0;
     }
 
+    // bidirectional L4 payload stat getters
+        public double getBidirSegPayloadLengthMin() {
+        return (forward.size() > 0 || backward.size() > 0) ? bidirSegPayloadStats.getMin() : 0;
+    }
+    public double getBidirSegPayloadLengthMax() {
+        return (forward.size() > 0 || backward.size() > 0) ? bidirSegPayloadStats.getMax() : 0;
+    }
+    public double getBidirSegPayloadLengthMean() {
+        return (forward.size() > 0 || backward.size() > 0) ? bidirSegPayloadStats.getMean() : 0;
+    }
+    public double getBidirSegPayloadLengthStd() {
+        return (forward.size() > 0 || backward.size() > 0) ? bidirSegPayloadStats.getStandardDeviation() : 0;
+    }
+
     public int getFlagCount(String key) {
         return flagCounts.get(key).value;
     }
@@ -1576,8 +1601,12 @@ public class BasicFlow {
         dump.append(getBwdSegPayloadLengthMin()).append(separator);     //99
         dump.append(getBwdSegPayloadLengthMean()).append(separator);    //100
         dump.append(getBwdSegPayloadLengthStd()).append(separator);     //101
+        dump.append(getBidirSegPayloadLengthMax()).append(separator);   //102
+        dump.append(getBidirSegPayloadLengthMin()).append(separator);   //103
+        dump.append(getBidirSegPayloadLengthMean()).append(separator);  //104
+        dump.append(getBidirSegPayloadLengthStd()).append(separator);   //105
 
-        dump.append(getLabel());                                        //102
+        dump.append(getLabel());                                        //106
 
         return dump.toString();
     }
