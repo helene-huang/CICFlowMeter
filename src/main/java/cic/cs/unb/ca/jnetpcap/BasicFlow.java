@@ -516,16 +516,6 @@ public class BasicFlow {
         return 0;
     }
 
-    // duplicate of getPacketLengthMean() 
-    /* 
-    public double getAvgPacketSize() {
-        if (this.packetCount() > 0) {
-            return (this.flowLengthStats.getSum() / this.packetCount());
-        }
-        return 0;
-    }
-    */
-
     public double getFwdSegmentLengthMean() {
         return (fwdSegmentStats.getN() > 0) ? fwdSegmentStats.getMean() : 0;
     }
@@ -906,7 +896,6 @@ public class BasicFlow {
             dump += this.flowLengthStats.getMax() + ",";
             dump += this.flowLengthStats.getMean() + ",";
             dump += this.flowLengthStats.getStandardDeviation() + ",";
-            //dump += flowLengthStats.getVariance() + ",";
         } else {
             dump += "0,0,0,0,";
         }
@@ -916,7 +905,6 @@ public class BasicFlow {
         }
 
         dump += getDownUpRatio() + ",";
-        //dump += getAvgPacketSize() + ",";
         //dump += fAvgSegmentSize() + ",";
         //dump += bAvgSegmentSize() + ",";
         dump += this.fHeaderBytes + ",";  //this feature is duplicated
@@ -1283,10 +1271,6 @@ public class BasicFlow {
         return (forward.size() > 0 || backward.size() > 0) ? flowLengthStats.getStandardDeviation() : 0;
     }
 
-    public double getPacketLengthVariance() {
-        return (forward.size() > 0 || backward.size() > 0) ? flowLengthStats.getVariance() : 0;
-    }
-
     // bidirectional L4 payload stat getters
         public double getBidirSegPayloadLengthMin() {
         return (forward.size() > 0 || backward.size() > 0) ? bidirSegPayloadStats.getMin() : 0;
@@ -1509,13 +1493,11 @@ public class BasicFlow {
             dump.append(flowLengthStats.getMax()).append(separator);                //48
             dump.append(flowLengthStats.getMean()).append(separator);                //49
             dump.append(flowLengthStats.getStandardDeviation()).append(separator);    //50
-            // dump.append(flowLengthStats.getVariance()).append(separator);            //51
         } else {//seem to less one
             dump.append(0).append(separator);
             dump.append(0).append(separator);
             dump.append(0).append(separator);
             dump.append(0).append(separator);
-            // dump.append(0).append(separator);
         }
 
 		/*for(MutableInt v:flagCounts.values()) {
@@ -1534,7 +1516,6 @@ public class BasicFlow {
         dump.append(flagCounts.get("ECE").value).append(separator);                  //59
 
         dump.append(getDownUpRatio()).append(separator);                            //60
-        // dump.append(getAvgPacketSize()).append(separator);                            //61: duplicate of 49, "Packet Length Mean"
         dump.append(getFwdSegmentLengthMean()).append(separator);                            //62
         dump.append(getBwdSegmentLengthMean()).append(separator);                            //63
         //dump.append(fHeaderBytes).append(separator);								//62 dupicate with 43
