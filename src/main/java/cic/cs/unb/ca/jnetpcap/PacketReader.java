@@ -144,7 +144,7 @@ public class PacketReader {
 
 				// set L3 header length
 				// getHeaderLength() from class JHeader is in the inherited methods list of class Ip4 in the javadoc of jnetpcap
-				packetInfo.setPacketHeaderBytes(ipv4.getHeaderLength());
+				packetInfo.setPacketHeaderBytes(this.ipv4.getHeaderLength());
 
 				// This check needs to be first because ICMP protocol may embed the contents of
 				// the original packet (so it will have tcp/udp headers as well).
@@ -250,7 +250,7 @@ public class PacketReader {
 
 				// set L3 header length
 				// getHeaderLength() from class JHeader is in the inherited methods list of class Ip6 in the javadoc of jnetpcap
-				packetInfo.setPacketHeaderBytes(ipv6.getHeaderLength());
+				packetInfo.setPacketHeaderBytes(this.ipv6.getHeaderLength());
 
 				if(packet.hasHeader(this.tcp)){						
 					packetInfo.setSrcPort(tcp.source());

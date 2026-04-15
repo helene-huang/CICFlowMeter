@@ -205,7 +205,7 @@ public class BasicPacketInfo {
 
 	// L3 header length getter
 	public long getPacketHeaderBytes() {
-		return packetHeaderBytes;
+		return this.packetHeaderBytes;
 	}	
 
 	// L3 header length setter

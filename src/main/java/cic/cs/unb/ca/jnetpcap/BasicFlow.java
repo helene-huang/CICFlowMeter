@@ -517,11 +517,11 @@ public class BasicFlow {
     }
 
     public double getFwdSegmentLengthMean() {
-        return (fwdSegmentStats.getN() > 0) ? fwdSegmentStats.getMean() : 0;
+        return (this.fwdSegmentStats.getN() > 0) ? this.fwdSegmentStats.getMean() : 0;
     }
 
     public double getBwdSegmentLengthMean() {
-        return (bwdSegmentStats.getN() > 0) ? bwdSegmentStats.getMean() : 0;
+        return (this.bwdSegmentStats.getN() > 0) ? this.bwdSegmentStats.getMean() : 0;
     }
 
     public void initFlags() {
@@ -1144,30 +1144,30 @@ public class BasicFlow {
 
     // fwd L4 payload (= segment payload) stats -- used to be called "packet" length stats in the original version
     public double getFwdSegPayloadLengthMax() {
-    return (fwdSegPayloadStats.getN() > 0) ? fwdSegPayloadStats.getMax() : 0;
+    return (this.fwdSegPayloadStats.getN() > 0) ? this.fwdSegPayloadStats.getMax() : 0;
     }
     public double getFwdSegPayloadLengthMin() {
-        return (fwdSegPayloadStats.getN() > 0) ? fwdSegPayloadStats.getMin() : 0;
+        return (this.fwdSegPayloadStats.getN() > 0) ? this.fwdSegPayloadStats.getMin() : 0;
     }
     public double getFwdSegPayloadLengthMean() {
-        return (fwdSegPayloadStats.getN() > 0) ? fwdSegPayloadStats.getMean() : 0;
+        return (this.fwdSegPayloadStats.getN() > 0) ? this.fwdSegPayloadStats.getMean() : 0;
     }
     public double getFwdSegPayloadLengthStd() {
-        return (fwdSegPayloadStats.getN() > 0) ? fwdSegPayloadStats.getStandardDeviation() : 0;
+        return (this.fwdSegPayloadStats.getN() > 0) ? this.fwdSegPayloadStats.getStandardDeviation() : 0;
     }
 
     // bwd L4 payload stats 
     public double getBwdSegPayloadLengthMax() {
-    return (bwdSegPayloadStats.getN() > 0) ? bwdSegPayloadStats.getMax() : 0;
+    return (this.bwdSegPayloadStats.getN() > 0) ? this.bwdSegPayloadStats.getMax() : 0;
     }
     public double getBwdSegPayloadLengthMin() {
-        return (bwdSegPayloadStats.getN() > 0) ? bwdSegPayloadStats.getMin() : 0;
+        return (this.bwdSegPayloadStats.getN() > 0) ? this.bwdSegPayloadStats.getMin() : 0;
     }
     public double getBwdSegPayloadLengthMean() {
-        return (bwdSegPayloadStats.getN() > 0) ? bwdSegPayloadStats.getMean() : 0;
+        return (this.bwdSegPayloadStats.getN() > 0) ? this.bwdSegPayloadStats.getMean() : 0;
     }
     public double getBwdSegPayloadLengthStd() {
-        return (bwdSegPayloadStats.getN() > 0) ? bwdSegPayloadStats.getStandardDeviation() : 0;
+        return (this.bwdSegPayloadStats.getN() > 0) ? this.bwdSegPayloadStats.getStandardDeviation() : 0;
     }
 
     public double getFlowBytesPerSec() {
@@ -1273,16 +1273,16 @@ public class BasicFlow {
 
     // bidirectional L4 payload stat getters
         public double getBidirSegPayloadLengthMin() {
-        return (forward.size() > 0 || backward.size() > 0) ? bidirSegPayloadStats.getMin() : 0;
+        return (this.forward.size() > 0 || this.backward.size() > 0) ? this.bidirSegPayloadStats.getMin() : 0;
     }
     public double getBidirSegPayloadLengthMax() {
-        return (forward.size() > 0 || backward.size() > 0) ? bidirSegPayloadStats.getMax() : 0;
+        return (this.forward.size() > 0 || this.backward.size() > 0) ? this.bidirSegPayloadStats.getMax() : 0;
     }
     public double getBidirSegPayloadLengthMean() {
-        return (forward.size() > 0 || backward.size() > 0) ? bidirSegPayloadStats.getMean() : 0;
+        return (this.forward.size() > 0 || this.backward.size() > 0) ? this.bidirSegPayloadStats.getMean() : 0;
     }
     public double getBidirSegPayloadLengthStd() {
-        return (forward.size() > 0 || backward.size() > 0) ? bidirSegPayloadStats.getStandardDeviation() : 0;
+        return (this.forward.size() > 0 || this.backward.size() > 0) ? this.bidirSegPayloadStats.getStandardDeviation() : 0;
     }
 
     public int getFlagCount(String key) {
@@ -1306,11 +1306,11 @@ public class BasicFlow {
     }
 
     public double getFwdSegmentLengthMin() {
-        return (fwdSegmentStats.getN() > 0) ? fwdSegmentStats.getMin() : 0;
+        return (this.fwdSegmentStats.getN() > 0) ? this.fwdSegmentStats.getMin() : 0;
     }
 
     public double getBwdSegmentLengthMin() {
-        return (bwdSegmentStats.getN() > 0) ? bwdSegmentStats.getMin() : 0;
+        return (this.bwdSegmentStats.getN() > 0) ? this.bwdSegmentStats.getMin() : 0;
     }
 
     public double getActiveMean() {
