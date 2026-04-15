@@ -62,67 +62,67 @@ public enum FlowFeature {
     pkt_len_max("Packet Length Max","PLMA"),			//48
     pkt_len_avg("Packet Length Mean","PLAG"),			//49
     pkt_len_std("Packet Length Std","PLSD"),			//50
-    // pkt_len_var("Packet Length Variance","PLVA"),		//51: directly derived from 50, as variance is the square of std
-    fin_cnt("FIN Flag Count","FINCT"),				//52
-    syn_cnt("SYN Flag Count","SYNCT"),				//53
-    rst_cnt("RST Flag Count","RSTCT"),				//54
-    pst_cnt("PSH Flag Count","PSHCT"),				//55
-    ack_cnt("ACK Flag Count","ACKCT"),				//56
-    urg_cnt("URG Flag Count","URGCT"),				//57
-    CWR_cnt("CWR Flag Count","CWRCT"),				//58
-    ece_cnt("ECE Flag Count","ECECT"),				//59
-    down_up_ratio("Down/Up Ratio","D/URO"),			//60
-    // pkt_size_avg("Average Packet Size","PSAG"),			//61: duplicate of 49, "Packet Length Mean"
-    fw_seg_avg("Fwd Segment Size Avg","FwSgAG"),		//62
-    bw_seg_avg("Bwd Segment Size Avg","BwSgAG"),		//63
-    fw_byt_blk_avg("Fwd Bytes/Bulk Avg","FwB/BAG"),		//64   62 is duplicated with 43,so has been deleted
-    fw_pkt_blk_avg("Fwd Packet/Bulk Avg","FwP/BAG"),		//65
-    fw_blk_rate_avg("Fwd Bulk Rate Avg","FwBRAG"),		//66
-    bw_byt_blk_avg("Bwd Bytes/Bulk Avg","BwB/BAG"),		//67
-    bw_pkt_blk_avg("Bwd Packet/Bulk Avg","BwP/BAG"),		//68
-    bw_blk_rate_avg("Bwd Bulk Rate Avg","BwBRAG"),		//69
-    subfl_fw_pkt("Subflow Fwd Packets","SFFwP"),		//70
-    subfl_fw_byt("Subflow Fwd Bytes","SFFwB"),			//71
-    subfl_bw_pkt("Subflow Bwd Packets","SFBwP"),		//72
-    subfl_bw_byt("Subflow Bwd Bytes","SFBwB"),			//73
-    fw_win_byt("FWD Init Win Bytes","FwWB"),			//74
-    bw_win_byt("Bwd Init Win Bytes","BwWB"),			//75
-    Fw_act_pkt("Fwd Act Data Pkts","FwAP"),             //76
-    Bw_act_pkt("Bwd Act Data Pkts","BwAP"),             //77
-    fw_seg_min("Fwd Seg Size Min","FwSgMI"),			//78
-    bw_seg_min("Bwd Seg Size Min", "BwSgMI"),           // 79
-    atv_avg("Active Mean","AcAG"),				//80
-    atv_std("Active Std","AcSD"),				//81
-    atv_max("Active Max","AcMA"),				//82
-    atv_min("Active Min","AcMI"),				//83
-    idl_avg("Idle Mean","IlAG"),				//84
-    idl_std("Idle Std","IlSD"),					//85
-    idl_max("Idle Max","IlMA"),					//86
-    idl_min("Idle Min","IlMI"),					//87
-    icmp_code("ICMP Code", "IcmpC"),            // 88
-    icmp_type("ICMP Type", "IcmpT"),            // 89
+    // pkt_len_var("Packet Length Variance","PLVA"),    // removed: directly derived from "Packet Length Std" as variance is the square of std
+    fin_cnt("FIN Flag Count","FINCT"),				    //51
+    syn_cnt("SYN Flag Count","SYNCT"),				    //52
+    rst_cnt("RST Flag Count","RSTCT"),				    //53
+    pst_cnt("PSH Flag Count","PSHCT"),				    //54
+    ack_cnt("ACK Flag Count","ACKCT"),				    //55
+    urg_cnt("URG Flag Count","URGCT"),				    //56
+    CWR_cnt("CWR Flag Count","CWRCT"),				    //57
+    ece_cnt("ECE Flag Count","ECECT"),				    //58
+    down_up_ratio("Down/Up Ratio","D/URO"),			    //59
+    // pkt_size_avg("Average Packet Size","PSAG"),		// removed: duplicate of "Packet Length Mean"
+    fw_seg_avg("Fwd Segment Size Avg","FwSgAG"),		//60
+    bw_seg_avg("Bwd Segment Size Avg","BwSgAG"),		//61
+    fw_byt_blk_avg("Fwd Bytes/Bulk Avg","FwB/BAG"),		//62   62 is duplicated with 43,so has been deleted
+    fw_pkt_blk_avg("Fwd Packet/Bulk Avg","FwP/BAG"),	//63
+    fw_blk_rate_avg("Fwd Bulk Rate Avg","FwBRAG"),		//64
+    bw_byt_blk_avg("Bwd Bytes/Bulk Avg","BwB/BAG"),		//65
+    bw_pkt_blk_avg("Bwd Packet/Bulk Avg","BwP/BAG"),	//66
+    bw_blk_rate_avg("Bwd Bulk Rate Avg","BwBRAG"),		//67
+    subfl_fw_pkt("Subflow Fwd Packets","SFFwP"),		//68
+    subfl_fw_byt("Subflow Fwd Bytes","SFFwB"),			//69
+    subfl_bw_pkt("Subflow Bwd Packets","SFBwP"),		//70
+    subfl_bw_byt("Subflow Bwd Bytes","SFBwB"),			//71
+    fw_win_byt("FWD Init Win Bytes","FwWB"),			//72
+    bw_win_byt("Bwd Init Win Bytes","BwWB"),			//73
+    Fw_act_pkt("Fwd Act Data Pkts","FwAP"),             //74
+    Bw_act_pkt("Bwd Act Data Pkts","BwAP"),             //75
+    fw_seg_min("Fwd Seg Size Min","FwSgMI"),			//76
+    bw_seg_min("Bwd Seg Size Min", "BwSgMI"),           //77
+    atv_avg("Active Mean","AcAG"),				        //78
+    atv_std("Active Std","AcSD"),				        //79
+    atv_max("Active Max","AcMA"),				        //80
+    atv_min("Active Min","AcMI"),				        //81
+    idl_avg("Idle Mean","IlAG"),				        //82
+    idl_std("Idle Std","IlSD"),					        //83
+    idl_max("Idle Max","IlMA"),					        //84
+    idl_min("Idle Min","IlMI"),					        //85
+    icmp_code("ICMP Code", "IcmpC"),                    //86
+    icmp_type("ICMP Type", "IcmpT"),                    //87
 
-    fwd_tcp_retrans("Fwd TCP Retrans. Count", "FwTcpRt"), //90
-    bwd_tcp_retrans("Bwd TCP Retrans. Count", "BwTcpRt"), //91
-    total_tcp_retrans("Total TCP Retrans. Count", "TotalTcpRt"), //92
+    fwd_tcp_retrans("Fwd TCP Retrans. Count", "FwTcpRt"),           //88
+    bwd_tcp_retrans("Bwd TCP Retrans. Count", "BwTcpRt"),           //89
+    total_tcp_retrans("Total TCP Retrans. Count", "TotalTcpRt"),    //90
 
-    cum_cnx_time("Total Connection Flow Time", "TCFT"), //93
+    cum_cnx_time("Total Connection Flow Time", "TCFT"),             //91
 
     // L4 payload (= segment payload) length stats
-    fw_pay_l_max("Fwd Segment Payload Length Max","FwSPaLMA"),      //94
-    fw_pay_l_min("Fwd Segment Payload Length Min","FwSPaLMI"),      //95
-    fw_pay_l_avg("Fwd Segment Payload Length Mean","FwSPaLAG"),     //96
-    fw_pay_l_std("Fwd Segment Payload Length Std","FwSPaLSD"),      //97
-    bw_pay_l_max("Bwd Segment Payload Length Max","BwSPaLMA"),      //98
-    bw_pay_l_min("Bwd Segment Payload Length Min","BwSPaLMI"),      //99
-    bw_pay_l_avg("Bwd Segment Payload Length Mean","BwSPaLAG"),     //100
-    bw_pay_l_std("Bwd Segment Payload Length Std","BwSPaLSD"),      //101
-    pay_l_max("Segment Payload Length Max","SPaLMA"),            //102
-    pay_l_min("Segment Payload Length Min","SPaLMI"),            //103
-    pay_l_avg("Segment Payload Length Mean","SPaLAG"),           //104
-    pay_l_std("Segment Payload Length Std","SPaLSD"),            //105
+    fw_pay_l_max("Fwd Segment Payload Length Max","FwSPaLMA"),      //92
+    fw_pay_l_min("Fwd Segment Payload Length Min","FwSPaLMI"),      //93
+    fw_pay_l_avg("Fwd Segment Payload Length Mean","FwSPaLAG"),     //94
+    fw_pay_l_std("Fwd Segment Payload Length Std","FwSPaLSD"),      //95
+    bw_pay_l_max("Bwd Segment Payload Length Max","BwSPaLMA"),      //96
+    bw_pay_l_min("Bwd Segment Payload Length Min","BwSPaLMI"),      //97
+    bw_pay_l_avg("Bwd Segment Payload Length Mean","BwSPaLAG"),     //98
+    bw_pay_l_std("Bwd Segment Payload Length Std","BwSPaLSD"),      //99
+    pay_l_max("Segment Payload Length Max","SPaLMA"),               //100
+    pay_l_min("Segment Payload Length Min","SPaLMI"),               //101
+    pay_l_avg("Segment Payload Length Mean","SPaLAG"),              //102
+    pay_l_std("Segment Payload Length Std","SPaLSD"),               //103
 
-	Label("Label","LBL",new String[]{"NeedManualLabel"});	        //106
+	Label("Label","LBL",new String[]{"NeedManualLabel"});	        //104
 
 
 	protected static final Logger logger = LoggerFactory.getLogger(FlowFeature.class);
