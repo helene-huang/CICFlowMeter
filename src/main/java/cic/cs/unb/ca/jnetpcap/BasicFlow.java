@@ -1515,8 +1515,8 @@ public class BasicFlow {
         dump.append(flagCounts.get("ECE").value).append(separator);         //58
 
         dump.append(getDownUpRatio()).append(separator);                    //59
-        dump.append(getFwdSegmentLengthMean()).append(separator);           //60
-        dump.append(getBwdSegmentLengthMean()).append(separator);           //61
+        dump.append(this.getFwdSegmentLengthMean()).append(separator);      //60
+        dump.append(this.getBwdSegmentLengthMean()).append(separator);      //61
         //dump.append(fHeaderBytes).append(separator);
 
         dump.append(fAvgBytesPerBulk()).append(separator);                  //62
@@ -1535,8 +1535,8 @@ public class BasicFlow {
         dump.append(Init_Win_bytes_backward).append(separator);             //73
         dump.append(Act_data_pkt_forward).append(separator);                //74
         dump.append(Act_data_pkt_backward).append(separator);               //75
-        dump.append(getFwdSegmentLengthMin()).append(separator);            //76
-        dump.append(getBwdSegmentLengthMin()).append(separator);            //77
+        dump.append(this.getFwdSegmentLengthMin()).append(separator);       //76
+        dump.append(this.getBwdSegmentLengthMin()).append(separator);       //77
 
 
         if (this.flowActive.getN() > 0) {
@@ -1573,18 +1573,18 @@ public class BasicFlow {
         dump.append(cumulativeConnectionDuration).append(separator);                //91
 
         // L4 payload (= segment payload) length stats
-        dump.append(getFwdSegPayloadLengthMax()).append(separator);                 //92
-        dump.append(getFwdSegPayloadLengthMin()).append(separator);                 //93
-        dump.append(getFwdSegPayloadLengthMean()).append(separator);                //94
-        dump.append(getFwdSegPayloadLengthStd()).append(separator);                 //95
-        dump.append(getBwdSegPayloadLengthMax()).append(separator);                 //96
-        dump.append(getBwdSegPayloadLengthMin()).append(separator);                 //97
-        dump.append(getBwdSegPayloadLengthMean()).append(separator);                //98
-        dump.append(getBwdSegPayloadLengthStd()).append(separator);                 //99
-        dump.append(getBidirSegPayloadLengthMax()).append(separator);               //100
-        dump.append(getBidirSegPayloadLengthMin()).append(separator);               //101
-        dump.append(getBidirSegPayloadLengthMean()).append(separator);              //102
-        dump.append(getBidirSegPayloadLengthStd()).append(separator);               //103
+        dump.append(this.getFwdSegPayloadLengthMax()).append(separator);            //92
+        dump.append(this.getFwdSegPayloadLengthMin()).append(separator);            //93
+        dump.append(this.getFwdSegPayloadLengthMean()).append(separator);           //94
+        dump.append(this.getFwdSegPayloadLengthStd()).append(separator);            //95
+        dump.append(this.getBwdSegPayloadLengthMax()).append(separator);            //96
+        dump.append(this.getBwdSegPayloadLengthMin()).append(separator);            //97
+        dump.append(this.getBwdSegPayloadLengthMean()).append(separator);           //98
+        dump.append(this.getBwdSegPayloadLengthStd()).append(separator);            //99
+        dump.append(this.getBidirSegPayloadLengthMax()).append(separator);          //100
+        dump.append(this.getBidirSegPayloadLengthMin()).append(separator);          //101
+        dump.append(this.getBidirSegPayloadLengthMean()).append(separator);         //102
+        dump.append(this.getBidirSegPayloadLengthStd()).append(separator);          //103
 
         dump.append(getLabel());                                                    //104
 
