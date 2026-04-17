@@ -51,6 +51,12 @@ public class BasicFlow {
     private long fHeaderBytes;
     private long bHeaderBytes;
 
+    // fwd/bwd segment header (L4 header) length min
+    // original bug: these were stored in the values "min_seg_size_forward" and "min_seg_size_backward"
+    // fix: variable renaming to reflect that these are L4 header length stats, not segment length stats
+    private long fwdSegHeaderLenMin;
+    private long bwdSegHeaderLenMin;
+
     // Is always the value true in this application
     private boolean isBidirectional;
 
@@ -205,6 +211,8 @@ public class BasicFlow {
         this.bFIN_cnt = 0;
         this.fHeaderBytes = 0L;
         this.bHeaderBytes = 0L;
+        this.fwdSegHeaderLenMin = 0L;
+        this.bwdSegHeaderLenMin = 0L;
         this.cumulativeConnectionDuration = 0L;
         this.tcpFlowState = null;
         this.tcpPacketsSeen = new HashSet<TcpRetransmissionDTO>();
@@ -243,6 +251,9 @@ public class BasicFlow {
 
 
         if (Arrays.equals(this.src, packet.getSrc())) {
+            // track fwd segment header length min
+            this.fwdSegHeaderLenMin = packet.getHeaderBytes();
+
             Init_Win_bytes_forward = packet.getTCPWindow();
 
             // track fwd packet length stats 
@@ -281,6 +292,9 @@ public class BasicFlow {
                 this.fRST_cnt++;
             }
         } else {
+            // track bwd segment header length min
+            this.bwdSegHeaderLenMin = packet.getHeaderBytes();
+
             Init_Win_bytes_backward = packet.getTCPWindow();
 
             // track bwd packet length stats 
@@ -391,6 +405,9 @@ public class BasicFlow {
 
                 this.fHeaderBytes += packet.getHeaderBytes();
 
+                // track fwd segment header length min
+                this.fwdSegHeaderLenMin = Math.min(this.fwdSegHeaderLenMin, packet.getHeaderBytes());
+
                 this.forward.add(packet);
                 this.forwardBytes += packet.getPayloadBytes();
                 if (this.forward.size() > 1)
@@ -436,6 +453,8 @@ public class BasicFlow {
                 }
 
                 this.bHeaderBytes += packet.getHeaderBytes();
+                // track bwd segment header length min
+                this.bwdSegHeaderLenMin = Math.min(this.bwdSegHeaderLenMin, packet.getHeaderBytes());
 
                 this.backward.add(packet);
                 this.backwardBytes += packet.getPayloadBytes();
@@ -481,6 +500,7 @@ public class BasicFlow {
             );
 
             this.fHeaderBytes += packet.getHeaderBytes();
+            this.fwdSegHeaderLenMin = Math.min(this.fwdSegHeaderLenMin, packet.getHeaderBytes());
 
             this.forward.add(packet);
             this.forwardBytes += packet.getPayloadBytes();
@@ -1261,6 +1281,14 @@ public class BasicFlow {
         return bHeaderBytes;
     }
 
+    // fwd/bwd segment header length min getters
+    public long getFwdSegHeaderLenMin() {
+        return (this.forward.size() > 0) ? this.fwdSegHeaderLenMin : 0;
+    }
+    public long getBwdSegHeaderLenMin() {
+        return (this.backward.size() > 0) ? this.bwdSegHeaderLenMin : 0;
+    }
+
     public double getMinPacketLength() {
         return (forward.size() > 0 || backward.size() > 0) ? flowLengthStats.getMin() : 0;
     }
@@ -1593,9 +1621,12 @@ public class BasicFlow {
         dump.append(this.getBidirSegPayloadLengthMin()).append(separator);          //103
         dump.append(this.getBidirSegPayloadLengthMean()).append(separator);         //104
         dump.append(this.getBidirSegPayloadLengthStd()).append(separator);          //105
-        
 
-        dump.append(getLabel());                                                    //106
+        // fwd/bwd segment header (L4 header) length min
+        dump.append(this.getFwdSegHeaderLenMin()).append(separator);                //106
+        dump.append(this.getBwdSegHeaderLenMin()).append(separator);                //107
+        
+        dump.append(getLabel());                                                    //108
 
         return dump.toString();
     }
