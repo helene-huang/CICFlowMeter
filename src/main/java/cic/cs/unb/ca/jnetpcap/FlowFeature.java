@@ -109,20 +109,22 @@ public enum FlowFeature {
     cum_cnx_time("Total Connection Flow Time", "TCFT"),             //91
 
     // L4 payload (= segment payload) length stats
-    fw_pay_l_max("Fwd Segment Payload Length Max","FwSPaLMA"),      //92
-    fw_pay_l_min("Fwd Segment Payload Length Min","FwSPaLMI"),      //93
-    fw_pay_l_avg("Fwd Segment Payload Length Mean","FwSPaLAG"),     //94
-    fw_pay_l_std("Fwd Segment Payload Length Std","FwSPaLSD"),      //95
-    bw_pay_l_max("Bwd Segment Payload Length Max","BwSPaLMA"),      //96
-    bw_pay_l_min("Bwd Segment Payload Length Min","BwSPaLMI"),      //97
-    bw_pay_l_avg("Bwd Segment Payload Length Mean","BwSPaLAG"),     //98
-    bw_pay_l_std("Bwd Segment Payload Length Std","BwSPaLSD"),      //99
-    pay_l_max("Segment Payload Length Max","SPaLMA"),               //100
-    pay_l_min("Segment Payload Length Min","SPaLMI"),               //101
-    pay_l_avg("Segment Payload Length Mean","SPaLAG"),              //102
-    pay_l_std("Segment Payload Length Std","SPaLSD"),               //103
+    fw_pay_l_tot("Fwd Segment Payload Length Total","FwSPaTO"),     //92
+    fw_pay_l_max("Fwd Segment Payload Length Max","FwSPaLMA"),      //93
+    fw_pay_l_min("Fwd Segment Payload Length Min","FwSPaLMI"),      //94
+    fw_pay_l_avg("Fwd Segment Payload Length Mean","FwSPaLAG"),     //95
+    fw_pay_l_std("Fwd Segment Payload Length Std","FwSPaLSD"),      //96
+    bw_pay_l_tot("Bwd Segment Payload Length Total","BwSPaTO"),     //97
+    bw_pay_l_max("Bwd Segment Payload Length Max","BwSPaLMA"),      //98
+    bw_pay_l_min("Bwd Segment Payload Length Min","BwSPaLMI"),      //99
+    bw_pay_l_avg("Bwd Segment Payload Length Mean","BwSPaLAG"),     //100
+    bw_pay_l_std("Bwd Segment Payload Length Std","BwSPaLSD"),      //101
+    pay_l_max("Segment Payload Length Max","SPaLMA"),               //102
+    pay_l_min("Segment Payload Length Min","SPaLMI"),               //103
+    pay_l_avg("Segment Payload Length Mean","SPaLAG"),              //104
+    pay_l_std("Segment Payload Length Std","SPaLSD"),               //105
 
-	Label("Label","LBL",new String[]{"NeedManualLabel"});	        //104
+	Label("Label","LBL",new String[]{"NeedManualLabel"});	        //106
 
 
 	protected static final Logger logger = LoggerFactory.getLogger(FlowFeature.class);
